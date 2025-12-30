@@ -150,7 +150,6 @@ async def list_assets_tool(
         transformed using `filter_spec`.
     """
     return await list_assets(
-        client=CLIENT,
         file_type=file_type,
         limit=limit,
         path=path,

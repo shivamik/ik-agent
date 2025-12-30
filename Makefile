@@ -1,2 +1,2 @@
 local-tests:
-\tdotenv run -- pytest tests/test_main.py
+	dotenv run -- pytest tests/test_main.py

@@ -41,7 +41,6 @@ def _validate_dates(start_date: str, end_date: str) -> None:
 
 async def get_accounts_usage(
     *,
-    client=CLIENT,
     start_date: str,
     end_date: str,
     filter_spec: Optional[Any] = None,
@@ -59,7 +58,7 @@ async def get_accounts_usage(
         "start_date": start_date,
         "end_date": end_date,
     }
-    raw = await client.accounts.usage.get(**body)
+    raw = await CLIENT.accounts.usage.get(**body)
 
     response = raw.dict()
 
@@ -68,20 +67,30 @@ async def get_accounts_usage(
 
 @tool(
     name="get_accounts_usage",
-    description="""
-Get ImageKit account usage information between two dates.
-
-Use `filter_spec` (glom spec) to reduce the response size.
-
-Examples:
-- "bandwidthBytes"
-- { bandwidth: "bandwidthBytes", storage: "mediaLibraryStorageBytes" }
-
-Dates:
-- start_date: YYYY-MM-DD
-- end_date: YYYY-MM-DD (exclusive)
-- Max range: 90 days
-""",
+    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nGet the account usage information between two dates. Note that the API response includes data from the start date while excluding data from the end date. In other words, the data covers the period starting from the specified start date up to, but not including, the end date.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    bandwidthBytes: {\n      type: 'integer',\n      description: 'Amount of bandwidth used in bytes.'\n    },\n    extensionUnitsCount: {\n      type: 'integer',\n      description: 'Number of extension units used.'\n    },\n    mediaLibraryStorageBytes: {\n      type: 'integer',\n      description: 'Storage used by media library in bytes.'\n    },\n    originalCacheStorageBytes: {\n      type: 'integer',\n      description: 'Storage used by the original cache in bytes.'\n    },\n    videoProcessingUnitsCount: {\n      type: 'integer',\n      description: 'Number of video processing units used.'\n    }\n  }\n}\n```",
+    inputSchema={
+        "json": {
+            "type": "object",
+            "properties": {
+                "endDate": {
+                    "type": "string",
+                    "description": "Specify a `endDate` in `YYYY-MM-DD` format. It should be after the `startDate`. The difference between `startDate` and `endDate` should be less than 90 days.",
+                    "format": "date",
+                },
+                "startDate": {
+                    "type": "string",
+                    "description": "Specify a `startDate` in `YYYY-MM-DD` format. It should be before the `endDate`. The difference between `startDate` and `endDate` should be less than 90 days.",
+                    "format": "date",
+                },
+                "filter_spec": {
+                    "type": "string",
+                    "title": "filter_spec",
+                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                },
+            },
+            "required": ["endDate", "startDate"],
+        }
+    },
 )
 async def get_accounts_usage_tool(
     start_date: str,
@@ -98,7 +107,6 @@ async def get_accounts_usage_tool(
     """
 
     return await get_accounts_usage(
-        client=CLIENT,
         start_date=start_date,
         end_date=end_date,
         filter_spec=filter_spec,
