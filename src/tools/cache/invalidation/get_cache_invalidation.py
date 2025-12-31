@@ -50,18 +50,26 @@ async def get_cache_invalidation(
     description="When using this tool, always use the `jq_filter` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API returns the status of a purge cache request.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    status: {\n      type: 'string',\n      description: 'Status of the purge request.',\n      enum: [        'Pending',\n        'Completed'\n      ]\n    }\n  }\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "requestId": {
-                    "type": "string",
-                },
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A jq filter to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A jq filter to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
                 },
+                "request_id": {"type": "string"},
             },
-            "required": ["requestId"],
+            "required": ["request_id"],
+            "type": "object",
         }
     },
 )

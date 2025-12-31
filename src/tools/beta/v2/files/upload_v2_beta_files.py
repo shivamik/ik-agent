@@ -95,73 +95,300 @@ async def upload_v2_beta_files(
 @tool(
     name="upload_v2_beta_files",
     inputSchema={
-        "type": "object",
+        "$defs": {
+            "extensions": {
+                "description": "Array of extensions to be applied to the asset. Each "
+                "extension can be configured with specific parameters "
+                "based on the extension type.\n",
+                "items": {
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "name": {
+                                    "description": "Specifies "
+                                    "the "
+                                    "background "
+                                    "removal "
+                                    "extension.",
+                                    "enum": ["remove-bg"],
+                                    "type": "string",
+                                },
+                                "options": {
+                                    "properties": {
+                                        "add_shadow": {
+                                            "description": "Whether "
+                                            "to "
+                                            "add "
+                                            "an "
+                                            "artificial "
+                                            "shadow "
+                                            "to "
+                                            "the "
+                                            "result. "
+                                            "Default "
+                                            "is "
+                                            "false. "
+                                            "Note: "
+                                            "Adding "
+                                            "shadows "
+                                            "is "
+                                            "currently "
+                                            "only "
+                                            "supported "
+                                            "for "
+                                            "car "
+                                            "photos.\n",
+                                            "type": "boolean",
+                                        },
+                                        "bg_color": {
+                                            "description": "Specifies "
+                                            "a "
+                                            "solid "
+                                            "color "
+                                            "background "
+                                            "using "
+                                            "hex "
+                                            "code "
+                                            "(e.g., "
+                                            '"81d4fa", '
+                                            '"fff") '
+                                            "or "
+                                            "color "
+                                            "name "
+                                            "(e.g., "
+                                            '"green"). '
+                                            "If "
+                                            "this "
+                                            "parameter "
+                                            "is "
+                                            "set, "
+                                            "`bg_image_url` "
+                                            "must "
+                                            "be "
+                                            "empty.\n",
+                                            "type": "string",
+                                        },
+                                        "bg_image_url": {
+                                            "description": "Sets "
+                                            "a "
+                                            "background "
+                                            "image "
+                                            "from "
+                                            "a "
+                                            "URL. "
+                                            "If "
+                                            "this "
+                                            "parameter "
+                                            "is "
+                                            "set, "
+                                            "`bg_color` "
+                                            "must "
+                                            "be "
+                                            "empty.\n",
+                                            "type": "string",
+                                        },
+                                        "semitransparency": {
+                                            "description": "Allows "
+                                            "semi-transparent "
+                                            "regions "
+                                            "in "
+                                            "the "
+                                            "result. "
+                                            "Default "
+                                            "is "
+                                            "true. "
+                                            "Note: "
+                                            "Semitransparency "
+                                            "is "
+                                            "currently "
+                                            "only "
+                                            "supported "
+                                            "for "
+                                            "car "
+                                            "windows.\n",
+                                            "type": "boolean",
+                                        },
+                                    },
+                                    "type": "object",
+                                },
+                            },
+                            "required": ["name"],
+                            "title": "Remove background",
+                            "type": "object",
+                        },
+                        {
+                            "properties": {
+                                "max_tags": {
+                                    "description": "Maximum "
+                                    "number "
+                                    "of tags "
+                                    "to "
+                                    "attach "
+                                    "to the "
+                                    "asset.",
+                                    "type": "integer",
+                                },
+                                "min_confidence": {
+                                    "description": "Minimum "
+                                    "confidence "
+                                    "level "
+                                    "for "
+                                    "tags "
+                                    "to "
+                                    "be "
+                                    "considered "
+                                    "valid.",
+                                    "type": "integer",
+                                },
+                                "name": {
+                                    "description": "Specifies "
+                                    "the "
+                                    "auto-tagging "
+                                    "extension "
+                                    "used.",
+                                    "enum": ["google-auto-tagging", "aws-auto-tagging"],
+                                    "type": "string",
+                                },
+                            },
+                            "required": ["max_tags", "min_confidence", "name"],
+                            "title": "Auto tagging",
+                            "type": "object",
+                        },
+                        {
+                            "properties": {
+                                "name": {
+                                    "description": "Specifies "
+                                    "the auto "
+                                    "description "
+                                    "extension.",
+                                    "enum": ["ai-auto-description"],
+                                    "type": "string",
+                                }
+                            },
+                            "required": ["name"],
+                            "title": "Auto description",
+                            "type": "object",
+                        },
+                    ]
+                },
+                "title": "Extensions Array",
+                "type": "array",
+            }
+        },
         "properties": {
-            "file": {
-                "type": "string",
-                "description": "The API accepts any of the following:\n\n- **Binary data** – send the raw bytes as `multipart/form-data`.\n- **HTTP / HTTPS URL** – a publicly reachable URL that ImageKit’s servers can fetch.\n- **Base64 string** – the file encoded as a Base64 data URI or plain Base64.\n\nWhen supplying a URL, the server must receive the response headers within 8 seconds; otherwise the request fails with 400 Bad Request.\n",
-            },
-            "fileName": {
-                "type": "string",
-                "description": "The name with which the file has to be uploaded.\n",
-            },
-            "token": {
-                "type": "string",
-                "description": "This is the client-generated JSON Web Token (JWT). The ImageKit.io server uses it to authenticate and check that the upload request parameters have not been tampered with after the token has been generated. Learn how to create the token on the page below. This field is only required for authentication when uploading a file from the client side.\n\n\n**Note**: Sending a JWT that has been used in the past will result in a validation error. Even if your previous request resulted in an error, you should always send a new token.\n\n\n**⚠️Warning**: JWT must be generated on the server-side because it is generated using your account's private API key. This field is required for authentication when uploading a file from the client-side.\n",
-            },
             "checks": {
+                "description": "Server-side checks to run on the asset.\n"
+                "Read more about [Upload API "
+                "checks](/docs/api-reference/upload-file/upload-file-v2#upload-api-checks).\n",
                 "type": "string",
-                "description": "Server-side checks to run on the asset.\nRead more about [Upload API checks](/docs/api-reference/upload-file/upload-file-v2#upload-api-checks).\n",
             },
-            "customCoordinates": {
+            "custom_coordinates": {
+                "description": "Define an important area in the image. This "
+                "is only relevant for image type files.\n"
+                "\n"
+                "  - To be passed as a string with the x and "
+                "y coordinates of the top-left corner, and "
+                "width and height of the area of interest in "
+                "the format `x,y,width,height`. For example "
+                "- `10,10,100,100`\n"
+                "  - Can be used with "
+                "fo-customtransformation.\n"
+                "  - If this field is not specified and the "
+                "file is overwritten, then customCoordinates "
+                "will be removed.\n",
                 "type": "string",
-                "description": "Define an important area in the image. This is only relevant for image type files.\n\n  - To be passed as a string with the x and y coordinates of the top-left corner, and width and height of the area of interest in the format `x,y,width,height`. For example - `10,10,100,100`\n  - Can be used with fo-customtransformation.\n  - If this field is not specified and the file is overwritten, then customCoordinates will be removed.\n",
             },
-            "customMetadata": {
-                "type": "object",
-                "description": "JSON key-value pairs to associate with the asset. Create the custom metadata fields before setting these values.\n",
+            "custom_metadata": {
                 "additionalProperties": "true",
+                "description": "JSON key-value pairs to associate with the "
+                "asset. Create the custom metadata fields "
+                "before setting these values.\n",
+                "type": "object",
             },
             "description": {
-                "type": "string",
                 "description": "Optional text to describe the contents of the file.\n",
+                "type": "string",
             },
-            "extensions": {
-                "$ref": "#/$defs/extensions",
+            "extensions": {"$ref": "#/$defs/extensions"},
+            "file": {
+                "description": "The API accepts any of the following:\n"
+                "\n"
+                "- **Binary data** – send the raw bytes as "
+                "`multipart/form-data`.\n"
+                "- **HTTP / HTTPS URL** – a publicly reachable URL that "
+                "ImageKit’s servers can fetch.\n"
+                "- **Base64 string** – the file encoded as a Base64 data "
+                "URI or plain Base64.\n"
+                "\n"
+                "When supplying a URL, the server must receive the "
+                "response headers within 8 seconds; otherwise the request "
+                "fails with 400 Bad Request.\n",
+                "type": "string",
+            },
+            "file_name": {
+                "description": "The name with which the file has to be uploaded.\n",
+                "type": "string",
             },
             "folder": {
+                "description": "The folder path in which the image has to be uploaded. "
+                "If the folder(s) didn't exist before, a new folder(s) "
+                "is created. Using multiple `/` creates a nested "
+                "folder.\n",
                 "type": "string",
-                "description": "The folder path in which the image has to be uploaded. If the folder(s) didn't exist before, a new folder(s) is created. Using multiple `/` creates a nested folder.\n",
             },
-            "isPrivateFile": {
+            "is_private_file": {
+                "description": "Whether to mark the file as private or not.\n"
+                "\n"
+                "If `true`, the file is marked as private and "
+                "is accessible only using named transformation "
+                "or signed URL.\n",
                 "type": "boolean",
-                "description": "Whether to mark the file as private or not.\n\nIf `true`, the file is marked as private and is accessible only using named transformation or signed URL.\n",
             },
-            "isPublished": {
+            "is_published": {
+                "description": "Whether to upload file as published or not.\n"
+                "\n"
+                "If `false`, the file is marked as unpublished, "
+                "which restricts access to the file only via the "
+                "media library. Files in draft or unpublished "
+                "state can only be publicly accessed after being "
+                "published.\n"
+                "\n"
+                "The option to upload in draft state is only "
+                "available in custom enterprise pricing plans.\n",
                 "type": "boolean",
-                "description": "Whether to upload file as published or not.\n\nIf `false`, the file is marked as unpublished, which restricts access to the file only via the media library. Files in draft or unpublished state can only be publicly accessed after being published.\n\nThe option to upload in draft state is only available in custom enterprise pricing plans.\n",
             },
-            "overwriteAITags": {
+            "overwrite_ai_tags": {
+                "description": "If set to `true` and a file already exists "
+                "at the exact location, its AITags will be "
+                "removed. Set `overwriteAITags` to `false` to "
+                "preserve AITags.\n",
                 "type": "boolean",
-                "description": "If set to `true` and a file already exists at the exact location, its AITags will be removed. Set `overwriteAITags` to `false` to preserve AITags.\n",
             },
-            "overwriteCustomMetadata": {
+            "overwrite_custom_metadata": {
+                "description": "If the request does not have "
+                "`customMetadata`, and a file already "
+                "exists at the exact location, "
+                "existing customMetadata will be "
+                "removed.\n",
                 "type": "boolean",
-                "description": "If the request does not have `customMetadata`, and a file already exists at the exact location, existing customMetadata will be removed.\n",
             },
-            "overwriteFile": {
+            "overwrite_file": {
+                "description": "If `false` and `useUniqueFileName` is also "
+                "`false`, and a file already exists at the exact "
+                "location, upload API will return an error "
+                "immediately.\n",
                 "type": "boolean",
-                "description": "If `false` and `useUniqueFileName` is also `false`, and a file already exists at the exact location, upload API will return an error immediately.\n",
             },
-            "overwriteTags": {
+            "overwrite_tags": {
+                "description": "If the request does not have `tags`, and a file "
+                "already exists at the exact location, existing "
+                "tags will be removed.\n",
                 "type": "boolean",
-                "description": "If the request does not have `tags`, and a file already exists at the exact location, existing tags will be removed.\n",
             },
-            "responseFields": {
-                "type": "array",
-                "description": "Array of response field keys to include in the API response body.\n",
+            "response_fields": {
+                "description": "Array of response field keys to include in the "
+                "API response body.\n",
                 "items": {
-                    "type": "string",
                     "enum": [
                         "tags",
                         "customCoordinates",
@@ -172,188 +399,235 @@ async def upload_v2_beta_files(
                         "metadata",
                         "selectedFieldsSchema",
                     ],
-                },
-            },
-            "tags": {
-                "type": "array",
-                "description": 'Set the tags while uploading the file.\nProvide an array of tag strings (e.g. `["tag1", "tag2", "tag3"]`). The combined length of all tag characters must not exceed 500, and the `%` character is not allowed.\nIf this field is not specified and the file is overwritten, the existing tags will be removed.\n',
-                "items": {
                     "type": "string",
                 },
+                "type": "array",
+            },
+            "tags": {
+                "description": "Set the tags while uploading the file.\n"
+                'Provide an array of tag strings (e.g. `["tag1", "tag2", '
+                '"tag3"]`). The combined length of all tag characters must '
+                "not exceed 500, and the `%` character is not allowed.\n"
+                "If this field is not specified and the file is "
+                "overwritten, the existing tags will be removed.\n",
+                "items": {"type": "string"},
+                "type": "array",
+            },
+            "token": {
+                "description": "This is the client-generated JSON Web Token (JWT). The "
+                "ImageKit.io server uses it to authenticate and check "
+                "that the upload request parameters have not been "
+                "tampered with after the token has been generated. Learn "
+                "how to create the token on the page below. This field is "
+                "only required for authentication when uploading a file "
+                "from the client side.\n"
+                "\n"
+                "\n"
+                "**Note**: Sending a JWT that has been used in the past "
+                "will result in a validation error. Even if your previous "
+                "request resulted in an error, you should always send a "
+                "new token.\n"
+                "\n"
+                "\n"
+                "**⚠️Warning**: JWT must be generated on the server-side "
+                "because it is generated using your account's private API "
+                "key. This field is required for authentication when "
+                "uploading a file from the client-side.\n",
+                "type": "string",
             },
             "transformation": {
-                "type": "object",
-                "description": "Configure pre-processing (`pre`) and post-processing (`post`) transformations.\n\n- `pre` — applied before the file is uploaded to the Media Library.  \n  Useful for reducing file size or applying basic optimizations upfront (e.g., resize, compress).\n\n- `post` — applied immediately after upload.  \n  Ideal for generating transformed versions (like video encodes or thumbnails) in advance, so they're ready for delivery without delay.\n\nYou can mix and match any combination of post-processing types.\n",
+                "description": "Configure pre-processing (`pre`) and "
+                "post-processing (`post`) transformations.\n"
+                "\n"
+                "- `pre` — applied before the file is uploaded "
+                "to the Media Library.  \n"
+                "  Useful for reducing file size or applying "
+                "basic optimizations upfront (e.g., resize, "
+                "compress).\n"
+                "\n"
+                "- `post` — applied immediately after upload.  \n"
+                "  Ideal for generating transformed versions "
+                "(like video encodes or thumbnails) in advance, "
+                "so they're ready for delivery without delay.\n"
+                "\n"
+                "You can mix and match any combination of "
+                "post-processing types.\n",
                 "properties": {
                     "post": {
-                        "type": "array",
-                        "description": "List of transformations to apply *after* the file is uploaded.  \nEach item must match one of the following types:\n`transformation`, `gif-to-video`, `thumbnail`, `abs`.\n",
+                        "description": "List of transformations "
+                        "to apply *after* the "
+                        "file is uploaded.  \n"
+                        "Each item must match "
+                        "one of the following "
+                        "types:\n"
+                        "`transformation`, "
+                        "`gif-to-video`, "
+                        "`thumbnail`, `abs`.\n",
                         "items": {
                             "anyOf": [
                                 {
-                                    "type": "object",
-                                    "title": "Simple post-transformation",
                                     "properties": {
                                         "type": {
-                                            "type": "string",
                                             "description": "Transformation type.",
                                             "enum": ["transformation"],
+                                            "type": "string",
                                         },
                                         "value": {
+                                            "description": "Transformation "
+                                            "string "
+                                            "(e.g. "
+                                            "`w-200,h-200`).  \n"
+                                            "Same "
+                                            "syntax "
+                                            "as "
+                                            "ImageKit "
+                                            "URL-based "
+                                            "transformations.\n",
                                             "type": "string",
-                                            "description": "Transformation string (e.g. `w-200,h-200`).  \nSame syntax as ImageKit URL-based transformations.\n",
                                         },
                                     },
                                     "required": ["type", "value"],
+                                    "title": "Simple post-transformation",
+                                    "type": "object",
                                 },
                                 {
-                                    "type": "object",
-                                    "title": "Convert GIF to video",
                                     "properties": {
                                         "type": {
-                                            "type": "string",
-                                            "description": "Converts an animated GIF into an MP4.",
+                                            "description": "Converts "
+                                            "an "
+                                            "animated "
+                                            "GIF "
+                                            "into "
+                                            "an "
+                                            "MP4.",
                                             "enum": ["gif-to-video"],
+                                            "type": "string",
                                         },
                                         "value": {
+                                            "description": "Optional "
+                                            "transformation "
+                                            "string "
+                                            "to "
+                                            "apply "
+                                            "to "
+                                            "the "
+                                            "output "
+                                            "video.  \n"
+                                            "**Example**: "
+                                            "`q-80`\n",
                                             "type": "string",
-                                            "description": "Optional transformation string to apply to the output video.  \n**Example**: `q-80`\n",
                                         },
                                     },
                                     "required": ["type"],
+                                    "title": "Convert GIF to video",
+                                    "type": "object",
                                 },
                                 {
-                                    "type": "object",
-                                    "title": "Generate a thumbnail",
                                     "properties": {
                                         "type": {
-                                            "type": "string",
-                                            "description": "Generates a thumbnail image.",
+                                            "description": "Generates "
+                                            "a "
+                                            "thumbnail "
+                                            "image.",
                                             "enum": ["thumbnail"],
+                                            "type": "string",
                                         },
                                         "value": {
+                                            "description": "Optional "
+                                            "transformation "
+                                            "string.  \n"
+                                            "**Example**: "
+                                            "`w-150,h-150`\n",
                                             "type": "string",
-                                            "description": "Optional transformation string.  \n**Example**: `w-150,h-150`\n",
                                         },
                                     },
                                     "required": ["type"],
+                                    "title": "Generate a thumbnail",
+                                    "type": "object",
                                 },
                                 {
-                                    "type": "object",
-                                    "title": "Adaptive Bitrate Streaming",
                                     "properties": {
                                         "protocol": {
-                                            "type": "string",
-                                            "description": "Streaming protocol to use (`hls` or `dash`).",
+                                            "description": "Streaming "
+                                            "protocol "
+                                            "to "
+                                            "use "
+                                            "(`hls` "
+                                            "or "
+                                            "`dash`).",
                                             "enum": ["hls", "dash"],
+                                            "type": "string",
                                         },
                                         "type": {
-                                            "type": "string",
-                                            "description": "Adaptive Bitrate Streaming (ABS) setup.",
+                                            "description": "Adaptive "
+                                            "Bitrate "
+                                            "Streaming "
+                                            "(ABS) "
+                                            "setup.",
                                             "enum": ["abs"],
+                                            "type": "string",
                                         },
                                         "value": {
+                                            "description": "List "
+                                            "of "
+                                            "different "
+                                            "representations "
+                                            "you "
+                                            "want "
+                                            "to "
+                                            "create "
+                                            "separated "
+                                            "by "
+                                            "an "
+                                            "underscore.\n",
                                             "type": "string",
-                                            "description": "List of different representations you want to create separated by an underscore.\n",
                                         },
                                     },
                                     "required": ["protocol", "type", "value"],
+                                    "title": "Adaptive Bitrate Streaming",
+                                    "type": "object",
                                 },
-                            ],
+                            ]
                         },
+                        "type": "array",
                     },
                     "pre": {
+                        "description": "Transformation string to "
+                        "apply before uploading "
+                        "the file to the Media "
+                        "Library. Useful for "
+                        "optimizing files at "
+                        "ingestion.\n",
                         "type": "string",
-                        "description": "Transformation string to apply before uploading the file to the Media Library. Useful for optimizing files at ingestion.\n",
                     },
                 },
+                "type": "object",
             },
-            "useUniqueFileName": {
+            "use_unique_file_name": {
+                "description": "Whether to use a unique filename for this "
+                "file or not.\n"
+                "\n"
+                "If `true`, ImageKit.io will add a unique "
+                "suffix to the filename parameter to get a "
+                "unique filename.\n"
+                "\n"
+                "If `false`, then the image is uploaded "
+                "with the provided filename parameter, and "
+                "any existing file with the same name is "
+                "replaced.\n",
                 "type": "boolean",
-                "description": "Whether to use a unique filename for this file or not.\n\nIf `true`, ImageKit.io will add a unique suffix to the filename parameter to get a unique filename.\n\nIf `false`, then the image is uploaded with the provided filename parameter, and any existing file with the same name is replaced.\n",
             },
-            "webhookUrl": {
+            "webhook_url": {
+                "description": "The final status of extensions after they have "
+                "completed execution will be delivered to this "
+                "endpoint as a POST request. [Learn "
+                "more](/docs/api-reference/digital-asset-management-dam/managing-assets/update-file-details#webhook-payload-structure) "
+                "about the webhook payload structure.\n",
                 "type": "string",
-                "description": "The final status of extensions after they have completed execution will be delivered to this endpoint as a POST request. [Learn more](/docs/api-reference/digital-asset-management-dam/managing-assets/update-file-details#webhook-payload-structure) about the webhook payload structure.\n",
             },
         },
-        "required": ["file", "fileName"],
-        "$defs": {
-            "extensions": {
-                "type": "array",
-                "title": "Extensions Array",
-                "description": "Array of extensions to be applied to the asset. Each extension can be configured with specific parameters based on the extension type.\n",
-                "items": {
-                    "anyOf": [
-                        {
-                            "type": "object",
-                            "title": "Remove background",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Specifies the background removal extension.",
-                                    "enum": ["remove-bg"],
-                                },
-                                "options": {
-                                    "type": "object",
-                                    "properties": {
-                                        "add_shadow": {
-                                            "type": "boolean",
-                                            "description": "Whether to add an artificial shadow to the result. Default is false. Note: Adding shadows is currently only supported for car photos.\n",
-                                        },
-                                        "bg_color": {
-                                            "type": "string",
-                                            "description": 'Specifies a solid color background using hex code (e.g., "81d4fa", "fff") or color name (e.g., "green"). If this parameter is set, `bg_image_url` must be empty.\n',
-                                        },
-                                        "bg_image_url": {
-                                            "type": "string",
-                                            "description": "Sets a background image from a URL. If this parameter is set, `bg_color` must be empty.\n",
-                                        },
-                                        "semitransparency": {
-                                            "type": "boolean",
-                                            "description": "Allows semi-transparent regions in the result. Default is true. Note: Semitransparency is currently only supported for car windows.\n",
-                                        },
-                                    },
-                                },
-                            },
-                            "required": ["name"],
-                        },
-                        {
-                            "type": "object",
-                            "title": "Auto tagging",
-                            "properties": {
-                                "maxTags": {
-                                    "type": "integer",
-                                    "description": "Maximum number of tags to attach to the asset.",
-                                },
-                                "minConfidence": {
-                                    "type": "integer",
-                                    "description": "Minimum confidence level for tags to be considered valid.",
-                                },
-                                "name": {
-                                    "type": "string",
-                                    "description": "Specifies the auto-tagging extension used.",
-                                    "enum": ["google-auto-tagging", "aws-auto-tagging"],
-                                },
-                            },
-                            "required": ["maxTags", "minConfidence", "name"],
-                        },
-                        {
-                            "type": "object",
-                            "title": "Auto description",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "Specifies the auto description extension.",
-                                    "enum": ["ai-auto-description"],
-                                },
-                            },
-                            "required": ["name"],
-                        },
-                    ],
-                },
-            },
-        },
+        "required": ["file", "file_name"],
+        "type": "object",
     },
 )
 async def upload_v2_beta_files_tool(

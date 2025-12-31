@@ -53,23 +53,53 @@ async def create_folders(
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will create a new folder. You can specify the folder name and location of the parent folder where this new folder should be created.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "folderName": {
-                    "type": "string",
-                    "description": "The folder will be created with this name. \n\nAll characters except alphabets and numbers (inclusive of unicode letters, marks, and numerals in other languages) will be replaced by an underscore i.e. `_`.\n",
-                },
-                "parentFolderPath": {
-                    "type": "string",
-                    "description": "The folder where the new folder should be created, for root use `/` else the path e.g. `containing/folder/`.\n\nNote: If any folder(s) is not present in the parentFolderPath parameter, it will be automatically created. For example, if you pass `/product/images/summer`, then `product`, `images`, and `summer` folders will be created if they don't already exist.\n",
-                },
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A filter_spec to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
+                },
+                "folder_name": {
+                    "description": "The folder will be created with this "
+                    "name. \n"
+                    "\n"
+                    "All characters except alphabets and "
+                    "numbers (inclusive of unicode letters, "
+                    "marks, and numerals in other languages) "
+                    "will be replaced by an underscore i.e. "
+                    "`_`.\n",
+                    "type": "string",
+                },
+                "parent_folder_path": {
+                    "description": "The folder where the new folder "
+                    "should be created, for root use "
+                    "`/` else the path e.g. "
+                    "`containing/folder/`.\n"
+                    "\n"
+                    "Note: If any folder(s) is not "
+                    "present in the parentFolderPath "
+                    "parameter, it will be "
+                    "automatically created. For "
+                    "example, if you pass "
+                    "`/product/images/summer`, then "
+                    "`product`, `images`, and `summer` "
+                    "folders will be created if they "
+                    "don't already exist.\n",
+                    "type": "string",
                 },
             },
-            "required": ["folderName", "parentFolderPath"],
+            "required": ["folder_name", "parent_folder_path"],
+            "type": "object",
         }
     },
 )

@@ -51,19 +51,31 @@ async def delete_folders(
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will delete a folder and all its contents permanently. The API returns an empty response.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "folderPath": {
-                    "type": "string",
-                    "description": "Full path to the folder you want to delete. For example `/folder/to/delete/`.\n",
-                },
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A filter_spec to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
+                },
+                "folder_path": {
+                    "description": "Full path to the folder you want to "
+                    "delete. For example "
+                    "`/folder/to/delete/`.\n",
+                    "type": "string",
                 },
             },
-            "required": ["folderPath"],
+            "required": ["folder_path"],
+            "type": "object",
         }
     },
 )

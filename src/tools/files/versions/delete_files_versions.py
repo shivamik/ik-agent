@@ -55,21 +55,27 @@ async def delete_files_versions(
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API deletes a non-current file version permanently. The API returns an empty response.\n\nNote: If you want to delete all versions of a file, use the delete file API.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "fileId": {
-                    "type": "string",
-                },
-                "versionId": {
-                    "type": "string",
-                },
+                "file_id": {"type": "string"},
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A filter_spec to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
                 },
+                "version_id": {"type": "string"},
             },
-            "required": ["fileId", "versionId"],
+            "required": ["file_id", "version_id"],
+            "type": "object",
         }
     },
 )

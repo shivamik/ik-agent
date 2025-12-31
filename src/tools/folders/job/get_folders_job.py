@@ -49,18 +49,26 @@ async def get_folders_job(
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API returns the status of a bulk job like copy and move folder operations.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    jobId: {\n      type: 'string',\n      description: 'Unique identifier of the bulk job.\\n'\n    },\n    purgeRequestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This will be present only if `purgeCache` is set to `true` in the rename folder API request.\\n'\n    },\n    status: {\n      type: 'string',\n      description: 'Status of the bulk job.',\n      enum: [        'Pending',\n        'Completed'\n      ]\n    },\n    type: {\n      type: 'string',\n      description: 'Type of the bulk job.',\n      enum: [        'COPY_FOLDER',\n        'MOVE_FOLDER',\n        'RENAME_FOLDER'\n      ]\n    }\n  }\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "jobId": {
-                    "type": "string",
-                },
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A filter_spec to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
                 },
+                "job_id": {"type": "string"},
             },
-            "required": ["jobId"],
+            "required": ["job_id"],
+            "type": "object",
         }
     },
 )

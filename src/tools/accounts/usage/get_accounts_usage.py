@@ -70,25 +70,41 @@ async def get_accounts_usage(
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nGet the account usage information between two dates. Note that the API response includes data from the start date while excluding data from the end date. In other words, the data covers the period starting from the specified start date up to, but not including, the end date.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    bandwidthBytes: {\n      type: 'integer',\n      description: 'Amount of bandwidth used in bytes.'\n    },\n    extensionUnitsCount: {\n      type: 'integer',\n      description: 'Number of extension units used.'\n    },\n    mediaLibraryStorageBytes: {\n      type: 'integer',\n      description: 'Storage used by media library in bytes.'\n    },\n    originalCacheStorageBytes: {\n      type: 'integer',\n      description: 'Storage used by the original cache in bytes.'\n    },\n    videoProcessingUnitsCount: {\n      type: 'integer',\n      description: 'Number of video processing units used.'\n    }\n  }\n}\n```",
     inputSchema={
         "json": {
-            "type": "object",
             "properties": {
-                "endDate": {
-                    "type": "string",
-                    "description": "Specify a `endDate` in `YYYY-MM-DD` format. It should be after the `startDate`. The difference between `startDate` and `endDate` should be less than 90 days.",
+                "end_date": {
+                    "description": "Specify a `endDate` in `YYYY-MM-DD` format. "
+                    "It should be after the `startDate`. The "
+                    "difference between `startDate` and `endDate` "
+                    "should be less than 90 days.",
                     "format": "date",
-                },
-                "startDate": {
                     "type": "string",
-                    "description": "Specify a `startDate` in `YYYY-MM-DD` format. It should be before the `endDate`. The difference between `startDate` and `endDate` should be less than 90 days.",
-                    "format": "date",
                 },
                 "filter_spec": {
-                    "type": "string",
+                    "description": "A filter_spec to apply to the response to "
+                    "include certain fields. Consult the "
+                    "output schema in the tool description to "
+                    "see the fields that are available.\n"
+                    "\n"
+                    "For example: to include only the `name` "
+                    "field in every object of a results array, "
+                    'you can provide ".results[].name".\n'
+                    "\n"
+                    "For more information, see the [jq "
+                    "documentation](https://jqlang.org/manual/).",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "type": "string",
+                },
+                "start_date": {
+                    "description": "Specify a `startDate` in `YYYY-MM-DD` "
+                    "format. It should be before the `endDate`. "
+                    "The difference between `startDate` and "
+                    "`endDate` should be less than 90 days.",
+                    "format": "date",
+                    "type": "string",
                 },
             },
-            "required": ["endDate", "startDate"],
+            "required": ["end_date", "start_date"],
+            "type": "object",
         }
     },
 )
