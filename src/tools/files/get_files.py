@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Dict, Optional
 
 from strands import tool
@@ -62,8 +60,8 @@ async def get_files(
                     "array, you can provide "
                     '".results[].name".\n'
                     "\n"
-                    "For more information, see the [jq "
-                    "documentation](https://jqlang.org/manual/).",
+                    "For more information, see the [glom"
+                    "documentation](http://glom.readthedocs.io/).",
                     "title": "filter_specs",
                     "type": "string",
                 },

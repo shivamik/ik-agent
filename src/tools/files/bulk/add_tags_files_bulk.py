@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Dict, Optional, Sequence
 
 from strands import tool
@@ -61,8 +59,8 @@ async def add_tags_files_bulk(
                     "items": {"type": "string"},
                     "type": "array",
                 },
-                "jq_filter": {
-                    "description": "A jq filter to apply to the response to "
+                "filter_spec": {
+                    "description": "A glom spec to apply to the response to "
                     "include certain fields. Consult the output "
                     "schema in the tool description to see the "
                     "fields that are available.\n"
@@ -71,9 +69,9 @@ async def add_tags_files_bulk(
                     "field in every object of a results array, "
                     'you can provide ".results[].name".\n'
                     "\n"
-                    "For more information, see the [jq "
-                    "documentation](https://jqlang.org/manual/).",
-                    "title": "jq Filter",
+                    "For more information, see the [glom"
+                    "documentation](http://glom.readthedocs.io/).",
+                    "title": "glom spec",
                     "type": "string",
                 },
                 "tags": {

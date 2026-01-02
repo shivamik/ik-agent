@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Dict, Optional
 
 from strands import tool
@@ -47,7 +45,7 @@ async def create_cache_invalidation(
 
 @tool(
     name="create_cache_invalidation",
-    description="When using this tool, always use the `jq_filter` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API will purge CDN cache and ImageKit.io's internal cache for a file.  Note: Purge cache is an asynchronous process and it may take some time to reflect the changes.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    requestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This can be used to check the status of the purge request.\\n'\n    }\n  }\n}\n```",
+    description="When using this tool, always use the `glom spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API will purge CDN cache and ImageKit.io's internal cache for a file.  Note: Purge cache is an asynchronous process and it may take some time to reflect the changes.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    requestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This can be used to check the status of the purge request.\\n'\n    }\n  }\n}\n```",
     inputSchema={
         "json": {
             "type": "object",
@@ -58,8 +56,8 @@ async def create_cache_invalidation(
                 },
                 "filter_spec": {
                     "type": "string",
-                    "title": "jq filter_spec",
-                    "description": 'A jq filter to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "title": "glom spec_spec",
+                    "description": 'A glom spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [glomdocumentation](http://glom.readthedocs.io/).',
                 },
             },
             "required": ["url"],

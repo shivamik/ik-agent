@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Any, Dict, Optional
 
 from strands import tool
@@ -60,7 +58,7 @@ async def get_from_url_files_metadata(
                 "filter_spec": {
                     "type": "string",
                     "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [jq documentation](https://jqlang.org/manual/).',
+                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [glomdocumentation](http://glom.readthedocs.io/).',
                 },
             },
             "required": ["url"],
