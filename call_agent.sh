@@ -1,0 +1,2 @@
+# dotenv run -- python -m src.agent '{"prompt": "How much bandwidth have i consumed last two month?"}'
+dotenv run -- python -m src.agent '{"prompt": "How to remove a background from an image cost effectively?"}'
