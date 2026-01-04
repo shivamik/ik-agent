@@ -65,9 +65,14 @@ async def search_docs(
 
 @tool(
     name="search_docs",
-    description=(
-        "Search ImageKit docs/community/API references with RAG and return a grounded answer."
-    ),
+    description="""
+            Search ImageKit docs/community/API references with RAG and return a grounded answer.
+            This tool only search the imagekit docs and prepares answers for the user's queries.
+            It can be used to answer questions about ImageKit features, API usage, transformation parameters, pricing, and other related topics.
+            This tool does not perform any action relating to assets, accounts, or settings.
+            This tool cannot create, modify, copy, move, save or delete any images or files.
+            This is only a question answering tool.
+            """,
     inputSchema={
         "type": "object",
         "properties": {

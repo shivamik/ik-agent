@@ -313,7 +313,7 @@ async def upload_files(
                     "type": "string",
                 },
                 "custom_metadata": {
-                    "additionalProperties": "true",
+                    "additionalProperties": True,
                     "description": "JSON key-value pairs to associate "
                     "with the asset. Create the custom "
                     "metadata fields before setting these "

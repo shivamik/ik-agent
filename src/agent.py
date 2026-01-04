@@ -7,6 +7,7 @@ from strands.models.openai import OpenAIModel
 import logging
 
 from src.tools import tools  # Import the tools list from src.tools
+from src.prompts import AGENT_SYSTEM_PROMPT
 
 # Configure the root strands logger
 logging.getLogger("strands").setLevel(logging.DEBUG)
@@ -24,9 +25,9 @@ model = OpenAIModel(
         "api_key": OPENAI_API_KEY,
     },
     # **model_config
-    model_id="gpt-4.1",
+    model_id="gpt-5.1",
     params={
-        "max_tokens": 10000,
+        "max_completion_tokens": 10000,
         "temperature": 0.7,
     },
 )
@@ -34,23 +35,7 @@ model = OpenAIModel(
 agent = Agent(
     model=model,
     tools=tools,
-    system_prompt="""
-    You are an ImageKit.io documentation agent.
-
-    STRICT RULES:
-    - You may ONLY answer using information returned by tools.
-    - You are NOT allowed to use pretrained or general knowledge.
-    - You MUST call search_docs before answering any factual question.
-    - If tool results do not contain the answer, say:
-    "I don’t have that information in ImageKit documentation."
-    - Never infer, guess, or extrapolate.
-
-    Process:
-    1. Analyze the question.
-    2. Call search_docs if information is needed.
-    3. Answer ONLY from tool output.
-    4. Be concise.
-    """,
+    system_prompt=AGENT_SYSTEM_PROMPT,
 )
 
 
