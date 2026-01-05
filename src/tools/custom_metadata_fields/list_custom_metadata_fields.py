@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -55,59 +55,48 @@ async def list_custom_metadata_fields(
 
 @tool(
     name="list_custom_metadata_fields",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API returns the array of created custom metadata field objects. By default the API returns only non deleted field objects, but you can include deleted fields in the API response.\n\nYou can also filter results by a specific folder path to retrieve custom metadata fields applicable at that location. This path-specific filtering is useful when using the **Path policy** feature to determine which custom metadata fields are selected for a given path.\n\n\n# Response Schema\n```json\n{\n  type: 'array',\n  items: {\n    $ref: '#/$defs/custom_metadata_field'\n  },\n  $defs: {\n    custom_metadata_field: {\n      type: 'object',\n      description: 'Object containing details of a custom metadata field.',\n      properties: {\n        id: {\n          type: 'string',\n          description: 'Unique identifier for the custom metadata field. Use this to update the field.'\n        },\n        label: {\n          type: 'string',\n          description: 'Human readable name of the custom metadata field. This name is displayed as form field label to the users while setting field value on the asset in the media library UI.\\n'\n        },\n        name: {\n          type: 'string',\n          description: 'API name of the custom metadata field. This becomes the key while setting `customMetadata` (key-value object) for an asset using upload or update API.\\n'\n        },\n        schema: {\n          type: 'object',\n          description: 'An object that describes the rules for the custom metadata field value.',\n          properties: {\n            type: {\n              type: 'string',\n              description: 'Type of the custom metadata field.',\n              enum: [                'Text',\n                'Textarea',\n                'Number',\n                'Date',\n                'Boolean',\n                'SingleSelect',\n                'MultiSelect'\n              ]\n            },\n            defaultValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                },\n                {\n                  type: 'boolean'\n                },\n                {\n                  type: 'array',\n                  title: 'Mixed',\n                  description: 'Default value should be of type array when custom metadata field type is set to `MultiSelect`.\\n',\n                  items: {\n                    anyOf: [                      {\n                        type: 'string'\n                      },\n                      {\n                        type: 'number'\n                      },\n                      {\n                        type: 'boolean'\n                      }\n                    ]\n                  }\n                }\n              ],\n              description: 'The default value for this custom metadata field. Data type of default value depends on the field type.\\n'\n            },\n            isValueRequired: {\n              type: 'boolean',\n              description: 'Specifies if the this custom metadata field is required or not.\\n'\n            },\n            maxLength: {\n              type: 'number',\n              description: 'Maximum length of string. Only set if `type` is set to `Text` or `Textarea`.\\n'\n            },\n            maxValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                }\n              ],\n              description: 'Maximum value of the field. Only set if field type is `Date` or `Number`. For `Date` type field, the value will be in ISO8601 string format. For `Number` type field, it will be a numeric value.\\n'\n            },\n            minLength: {\n              type: 'number',\n              description: 'Minimum length of string. Only set if `type` is set to `Text` or `Textarea`.\\n'\n            },\n            minValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                }\n              ],\n              description: 'Minimum value of the field. Only set if field type is `Date` or `Number`. For `Date` type field, the value will be in ISO8601 string format. For `Number` type field, it will be a numeric value.\\n'\n            },\n            selectOptions: {\n              type: 'array',\n              description: 'An array of allowed values when field type is `SingleSelect` or `MultiSelect`.\\n',\n              items: {\n                anyOf: [                  {\n                    type: 'string'\n                  },\n                  {\n                    type: 'number'\n                  },\n                  {\n                    type: 'boolean'\n                  }\n                ]\n              }\n            }\n          },\n          required: [            'type'\n          ]\n        }\n      },\n      required: [        'id',\n        'label',\n        'name',\n        'schema'\n      ]\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "folder_path": {
-                    "description": "The folder path (e.g., `/path/to/folder`) "
-                    "for which to retrieve applicable custom "
-                    "metadata fields. Useful for determining "
-                    "path-specific field selections when the "
-                    "[Path "
-                    "policy](https://imagekit.io/docs/dam/path-policy) "
-                    "feature is in use.\n",
-                    "type": "string",
-                },
-                "include_deleted": {
-                    "description": "Set it to `true` to include deleted "
-                    "field objects in the API response.\n",
-                    "type": "boolean",
-                },
-            },
-            "required": [],
-            "type": "object",
-        }
-    },
+    description=(
+        "List custom metadata fields defined in ImageKit, with optional "
+        "filters for deletion status and folder path."
+    ),
 )
 async def list_custom_metadata_fields_tool(
     folder_path: Optional[str] = None,
     include_deleted: Optional[bool] = None,
     filter_spec: Optional[Any] = None,
 ) -> List[Dict[str, Any]]:
-    """
-    List custom metadata fields.
+    """List custom metadata fields.
 
-    By default, returns only non-deleted fields. Use include_deleted to include
-    deleted fields, and folder_path to filter for a specific path policy.
+    This tool returns the collection of custom metadata field definitions
+    created in ImageKit. By default, only non-deleted fields are returned.
+    Deleted fields can be included by setting `include_deleted` to True.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    When the Path Policy feature is enabled, this tool can also filter
+    metadata fields applicable to a specific folder path. This is useful
+    for determining which metadata fields are available or enforced at a
+    given location in the media library.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        folder_path: Optional folder path (e.g. `/images/products/`) used
+            to retrieve custom metadata fields applicable to that path.
+            Relevant when Path Policy is enabled.
+        include_deleted: Whether to include deleted custom metadata fields
+            in the response. Defaults to False.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.name`, `.schema.type`
+
+    Returns:
+        A list of custom metadata field objects. Each field typically
+        includes:
+            - id: Unique identifier of the custom metadata field.
+            - label: Human-readable field label.
+            - name: API name of the field.
+            - schema: Validation and type rules for the field.
     """
     return await list_custom_metadata_fields(
         folder_path=folder_path,

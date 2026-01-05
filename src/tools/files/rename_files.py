@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -54,79 +54,10 @@ async def rename_files(
 
 @tool(
     name="rename_files",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nYou can rename an already existing file in the media library using rename file API. This operation would rename all file versions of the file. \n\nNote: The old URLs will stop working. The file/file version URLs cached on CDN will continue to work unless a purge is requested.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    purgeRequestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This can be used to check the status of the purge request.\\n'\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "file_path": {
-                    "description": "The full path of the file you want to rename.\n",
-                    "type": "string",
-                },
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "new_file_name": {
-                    "description": "The new name of the file. A filename "
-                    "can contain:\n"
-                    "\n"
-                    "Alphanumeric Characters: `a-z`, `A-Z`, "
-                    "`0-9` (including Unicode letters, "
-                    "marks, and numerals in other "
-                    "languages).\n"
-                    "Special Characters: `.`, `_`, and `-`.\n"
-                    "\n"
-                    "Any other character, including space, "
-                    "will be replaced by `_`.\n",
-                    "type": "string",
-                },
-                "purge_cache": {
-                    "description": "Option to purge cache for the old file "
-                    "and its versions' URLs.\n"
-                    "\n"
-                    "When set to true, it will internally "
-                    "issue a purge cache request on CDN to "
-                    "remove cached content of old file and its "
-                    "versions. This purge request is counted "
-                    "against your monthly purge quota.\n"
-                    "\n"
-                    "Note: If the old file were accessible at "
-                    "`https://ik.imagekit.io/demo/old-filename.jpg`, "
-                    "a purge cache request would be issued "
-                    "against "
-                    "`https://ik.imagekit.io/demo/old-filename.jpg*` "
-                    "(with a wildcard at the end). It will "
-                    "remove the file and its versions' URLs "
-                    "and any transformations made using query "
-                    "parameters on this file or its versions. "
-                    "However, the cache for file "
-                    "transformations made using path "
-                    "parameters will persist. You can purge "
-                    "them using the purge API. For more "
-                    "details, refer to the purge API "
-                    "documentation.\n"
-                    "\n"
-                    "\n"
-                    "\n"
-                    "Default value - `false`\n",
-                    "type": "boolean",
-                },
-            },
-            "required": ["file_path", "new_file_name"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Rename an ImageKit file and all of its versions, with an option to "
+        "purge cached URLs."
+    ),
 )
 async def rename_files_tool(
     file_path: str,
@@ -134,13 +65,36 @@ async def rename_files_tool(
     purge_cache: Optional[bool] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Rename a file and all of its versions.
+    """Rename a file and all of its versions.
 
-    Set purge_cache to purge CDN cache for old URLs (counts toward quota).
+    This tool renames an existing file in the ImageKit media library.
+    All versions of the file are renamed as part of the operation.
+    After renaming, old file URLs stop working, although cached CDN
+    responses may continue to be served unless explicitly purged.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    When `purge_cache` is set to `True`, a wildcard CDN purge request
+    is issued for the old file path and all of its versions. This purge
+    request is counted against the monthly purge quota.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        file_path: Full path of the file to be renamed.
+        new_file_name: New name for the file. Allowed characters include
+            alphanumeric characters (including unicode), `.`, `_`, and `-`.
+            Any other characters are replaced with underscores (`_`).
+        purge_cache: Whether to purge CDN cache for old file URLs.
+            Defaults to `False`.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.purgeRequestId`
+
+    Returns:
+        A dictionary containing rename operation metadata, typically:
+            - purgeRequestId: Identifier of the CDN purge request, present
+              only when cache purging is enabled.
     """
     return await rename_files(
         file_path=file_path,

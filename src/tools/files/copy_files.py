@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -53,51 +53,17 @@ async def copy_files(
     return maybe_filter(filter_spec, response)
 
 
+from typing import Any, Dict, Optional
+
+from strands import tool
+
+
 @tool(
     name="copy_files",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will copy a file from one folder to another. \n\nNote: If any file at the destination has the same name as the source file, then the source file and its versions (if `includeFileVersions` is set to true) will be appended to the destination file version history.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "destination_path": {
-                    "description": "Full path to the folder you want to "
-                    "copy the above file into.\n",
-                    "type": "string",
-                },
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "include_file_versions": {
-                    "description": "Option to copy all versions of "
-                    "a file. By default, only the "
-                    "current version of the file is "
-                    "copied. When set to true, all "
-                    "versions of the file will be "
-                    "copied. Default value - "
-                    "`false`.\n",
-                    "type": "boolean",
-                },
-                "source_file_path": {
-                    "description": "The full path of the file you want to copy.\n",
-                    "type": "string",
-                },
-            },
-            "required": ["destination_path", "source_file_path"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Copy an ImageKit file into another folder and optionally include "
+        "all file versions."
+    ),
 )
 async def copy_files_tool(
     destination_path: str,
@@ -105,14 +71,34 @@ async def copy_files_tool(
     include_file_versions: Optional[bool] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Copy a file from one folder to another.
+    """Copy a file from one folder to another.
 
-    Set include_file_versions to copy all versions; otherwise only the
-    current version is copied.
+    This tool copies a file from the source path into the specified
+    destination folder. If a file with the same name already exists
+    at the destination, the source file and its versions are appended
+    to the destination file’s version history instead of overwriting
+    the file.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    By default, only the current version of the file is copied. When
+    `include_file_versions` is set to `True`, all available versions
+    of the file are copied.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        destination_path: Full path of the destination folder where the
+            file will be copied.
+        source_file_path: Full path of the file to be copied.
+        include_file_versions: Whether to copy all versions of the file.
+            Defaults to `False`.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.name`
+
+    Returns:
+        An empty dictionary, indicating the file was copied successfully.
     """
     return await copy_files(
         destination_path=destination_path,

@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 DATE_FMT = "%Y-%m-%d"

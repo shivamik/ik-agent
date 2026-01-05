@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -55,72 +55,6 @@ async def rename_folders(
 @tool(
     name="rename_folders",
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API allows you to rename an existing folder. The folder and all its nested assets and sub-folders will remain unchanged, but their paths will be updated to reflect the new folder name.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  title: 'Async Bulk Job Response',\n  description: 'Job submitted successfully. A `jobId` will be returned.',\n  properties: {\n    jobId: {\n      type: 'string',\n      description: 'Unique identifier of the bulk job. This can be used to check the status of the bulk job.\\n'\n    }\n  },\n  required: [    'jobId'\n  ]\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "folder_path": {
-                    "description": "The full path to the folder you want to rename.\n",
-                    "type": "string",
-                },
-                "new_folder_name": {
-                    "description": "The new name for the folder.\n"
-                    "\n"
-                    "All characters except alphabets and "
-                    "numbers (inclusive of unicode "
-                    "letters, marks, and numerals in other "
-                    "languages) and `-` will be replaced "
-                    "by an underscore i.e. `_`.\n",
-                    "type": "string",
-                },
-                "purge_cache": {
-                    "description": "Option to purge cache for the old nested "
-                    "files and their versions' URLs.\n"
-                    "\n"
-                    "When set to true, it will internally "
-                    "issue a purge cache request on CDN to "
-                    "remove the cached content of the old "
-                    "nested files and their versions. There "
-                    "will only be one purge request for all "
-                    "the nested files, which will be counted "
-                    "against your monthly purge quota.\n"
-                    "\n"
-                    "Note: A purge cache request will be "
-                    "issued against "
-                    "`https://ik.imagekit.io/old/folder/path*` "
-                    "(with a wildcard at the end). This will "
-                    "remove all nested files, their versions' "
-                    "URLs, and any transformations made using "
-                    "query parameters on these files or their "
-                    "versions. However, the cache for file "
-                    "transformations made using path "
-                    "parameters will persist. You can purge "
-                    "them using the purge API. For more "
-                    "details, refer to the purge API "
-                    "documentation.\n"
-                    "\n"
-                    "Default value - `false`\n",
-                    "type": "boolean",
-                },
-            },
-            "required": ["folder_path", "new_folder_name"],
-            "type": "object",
-        }
-    },
 )
 async def rename_folders_tool(
     folder_path: str,
@@ -128,11 +62,34 @@ async def rename_folders_tool(
     purge_cache: Optional[bool] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Rename a folder and update paths for its nested assets.
+    """Rename an ImageKit folder and update paths for all nested assets.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool renames an existing folder while preserving its contents.
+    All nested files and sub-folders remain unchanged, but their paths
+    are updated to reflect the new folder name. The operation is executed
+    asynchronously as a bulk job.
+
+    To reduce response size and improve performance, it is strongly
+    recommended to provide a `filter_spec` to select only the fields
+    required from the response.
+
+    Args:
+        folder_path: The full path of the folder to be renamed.
+        new_folder_name: The new name for the folder.
+            All characters except alphabets, numbers (including unicode),
+            and hyphens (`-`) are replaced with underscores (`_`).
+        purge_cache: Whether to purge CDN cache for all old nested file URLs.
+            If set to `True`, a single wildcard purge request will be issued
+            for the old folder path and counted against the monthly purge quota.
+            Defaults to `False`.
+        filter_spec: Optional glom-style filter specification used to reduce
+            the response payload by selecting specific fields.
+            Example: `.jobId`
+
+    Returns:
+        A dictionary containing the submitted bulk job details, typically:
+            - jobId: Unique identifier for the asynchronous bulk job, which
+              can be used to query job status.
     """
     return await rename_folders(
         folder_path=folder_path,

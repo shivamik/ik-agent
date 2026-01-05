@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Sequence
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -46,47 +46,43 @@ async def delete_files_bulk(
 
 @tool(
     name="delete_files_bulk",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API deletes multiple files and all their file versions permanently.\n\nNote: If a file or specific transformation has been requested in the past, then the response is cached. Deleting a file does not purge the cache. You can purge the cache using purge cache API.\n\nA maximum of 100 files can be deleted at a time.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    successfullyDeletedFileIds: {\n      type: 'array',\n      description: 'An array of fileIds that were successfully deleted.\\n',\n      items: {\n        type: 'string'\n      }\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "file_ids": {
-                    "description": "An array of fileIds which you want to delete.\n",
-                    "items": {"type": "string"},
-                    "type": "array",
-                },
-                "filter_spec": {
-                    "description": "A glom spec to apply to the response to "
-                    "include certain fields. Consult the output "
-                    "schema in the tool description to see the "
-                    "fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "glom spec",
-                    "type": "string",
-                },
-            },
-            "required": ["file_ids"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Permanently delete multiple ImageKit files and all of their versions "
+        "in a single bulk operation."
+    ),
 )
 async def delete_files_bulk_tool(
     file_ids: Sequence[str],
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Delete multiple files and all their versions permanently.
+    """Permanently delete multiple files and all of their versions.
 
-    Provide up to 100 file IDs per request. This does not purge cache.
+    This tool deletes multiple files from the ImageKit media library.
+    All versions of each file are deleted as part of the operation.
+    The deletion is irreversible.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    Deleting files does not automatically purge cached URLs. If the files
+    or their transformations were previously requested, cached responses
+    may continue to be served until explicitly purged using the purge
+    cache API.
+
+    A maximum of 100 file IDs can be deleted in a single request.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        file_ids: Sequence of file IDs to delete.
+            Maximum allowed is 100 file IDs per request.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.successfullyDeletedFileIds`
+
+    Returns:
+        A dictionary containing the bulk deletion result, typically:
+            - successfullyDeletedFileIds: List of file IDs that were
+              successfully deleted.
     """
     return await delete_files_bulk(
         file_ids=file_ids,

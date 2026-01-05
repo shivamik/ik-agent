@@ -27,23 +27,35 @@ async def delete_files(
     return await CLIENT.files.delete(file_id)
 
 
+from typing import Any
+
+from strands import tool
+
+
 @tool(
     name="delete_files",
-    description="This API deletes the file and all its file versions permanently.\n\nNote: If a file or specific transformation has been requested in the past, then the response is cached. Deleting a file does not purge the cache. You can purge the cache using purge cache API.\n",
-    inputSchema={
-        "json": {
-            "properties": {"file_id": {"type": "string"}},
-            "required": ["file_id"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Permanently delete an ImageKit file and all of its versions.\n\n"
+        "This operation does not automatically purge CDN cache."
+    ),
 )
 async def delete_files_tool(
     file_id: str,
 ) -> Any:
-    """
-    Delete a file and all its versions permanently.
+    """Permanently delete a file and all its versions.
 
-    This operation is idempotent. Deleting a file does not purge cache.
+    This tool deletes a file and all of its historical versions.
+    The operation is idempotent—repeating the request has no additional
+    effect once the file is deleted.
+
+    Deleting a file does not purge cached URLs. If the file or any of its
+    transformations were previously requested, cached responses may
+    continue to be served until explicitly purged using the purge cache API.
+
+    Args:
+        file_id: Unique identifier of the file to be deleted.
+
+    Returns:
+        An empty response indicating the file was deleted successfully.
     """
     return await delete_files(file_id=file_id)

@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -45,36 +45,36 @@ async def create_cache_invalidation(
 
 @tool(
     name="create_cache_invalidation",
-    description="When using this tool, always use the `glom spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API will purge CDN cache and ImageKit.io's internal cache for a file.  Note: Purge cache is an asynchronous process and it may take some time to reflect the changes.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    requestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This can be used to check the status of the purge request.\\n'\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "type": "object",
-            "properties": {
-                "url": {
-                    "type": "string",
-                    "description": "The full URL of the file to be purged.\n",
-                },
-                "filter_spec": {
-                    "type": "string",
-                    "title": "glom spec_spec",
-                    "description": 'A glom spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [glomdocumentation](http://glom.readthedocs.io/).',
-                },
-            },
-            "required": ["url"],
-        }
-    },
+    description="Purge CDN and ImageKit cache for a file URL.",
 )
 async def create_cache_invalidation_tool(
     url: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Purge CDN and ImageKit cache for a URL.
+    """Invalidate cached content for a file URL.
 
-    This is an asynchronous operation. The response includes a request ID
-    you can use to query purge status later.
+    This tool purges both the CDN cache and ImageKit's internal cache for
+    the specified file URL.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    Cache invalidation is an asynchronous operation. The API returns a
+    purge request identifier that can be used to check the status of the
+    purge operation later.
+
+    To reduce response size and improve performance, it is recommended
+    to use `filter_spec` to select only the required fields from the
+    response.
+
+    Args:
+        url: Full URL of the file whose cache should be invalidated.
+        filter_spec: Optional glom-style filter specification to reduce
+            the response payload.
+            Example: `.requestId`
+
+    Returns:
+        An object containing:
+            - requestId: Unique identifier of the purge request.
     """
-    return await create_cache_invalidation(url=url, filter_spec=filter_spec)
+    return await create_cache_invalidation(
+        url=url,
+        filter_spec=filter_spec,
+    )

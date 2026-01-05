@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -51,221 +51,9 @@ async def create_custom_metadata_fields(
 
 @tool(
     name="create_custom_metadata_fields",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API creates a new custom metadata field. Once a custom metadata field is created either through this API or using the dashboard UI, its value can be set on the assets. The value of a field for an asset can be set using the media library UI or programmatically through upload or update assets API.\n\n\n# Response Schema\n```json\n{\n  $ref: '#/$defs/custom_metadata_field',\n  $defs: {\n    custom_metadata_field: {\n      type: 'object',\n      description: 'Object containing details of a custom metadata field.',\n      properties: {\n        id: {\n          type: 'string',\n          description: 'Unique identifier for the custom metadata field. Use this to update the field.'\n        },\n        label: {\n          type: 'string',\n          description: 'Human readable name of the custom metadata field. This name is displayed as form field label to the users while setting field value on the asset in the media library UI.\\n'\n        },\n        name: {\n          type: 'string',\n          description: 'API name of the custom metadata field. This becomes the key while setting `customMetadata` (key-value object) for an asset using upload or update API.\\n'\n        },\n        schema: {\n          type: 'object',\n          description: 'An object that describes the rules for the custom metadata field value.',\n          properties: {\n            type: {\n              type: 'string',\n              description: 'Type of the custom metadata field.',\n              enum: [                'Text',\n                'Textarea',\n                'Number',\n                'Date',\n                'Boolean',\n                'SingleSelect',\n                'MultiSelect'\n              ]\n            },\n            defaultValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                },\n                {\n                  type: 'boolean'\n                },\n                {\n                  type: 'array',\n                  title: 'Mixed',\n                  description: 'Default value should be of type array when custom metadata field type is set to `MultiSelect`.\\n',\n                  items: {\n                    anyOf: [                      {\n                        type: 'string'\n                      },\n                      {\n                        type: 'number'\n                      },\n                      {\n                        type: 'boolean'\n                      }\n                    ]\n                  }\n                }\n              ],\n              description: 'The default value for this custom metadata field. Data type of default value depends on the field type.\\n'\n            },\n            isValueRequired: {\n              type: 'boolean',\n              description: 'Specifies if the this custom metadata field is required or not.\\n'\n            },\n            maxLength: {\n              type: 'number',\n              description: 'Maximum length of string. Only set if `type` is set to `Text` or `Textarea`.\\n'\n            },\n            maxValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                }\n              ],\n              description: 'Maximum value of the field. Only set if field type is `Date` or `Number`. For `Date` type field, the value will be in ISO8601 string format. For `Number` type field, it will be a numeric value.\\n'\n            },\n            minLength: {\n              type: 'number',\n              description: 'Minimum length of string. Only set if `type` is set to `Text` or `Textarea`.\\n'\n            },\n            minValue: {\n              anyOf: [                {\n                  type: 'string'\n                },\n                {\n                  type: 'number'\n                }\n              ],\n              description: 'Minimum value of the field. Only set if field type is `Date` or `Number`. For `Date` type field, the value will be in ISO8601 string format. For `Number` type field, it will be a numeric value.\\n'\n            },\n            selectOptions: {\n              type: 'array',\n              description: 'An array of allowed values when field type is `SingleSelect` or `MultiSelect`.\\n',\n              items: {\n                anyOf: [                  {\n                    type: 'string'\n                  },\n                  {\n                    type: 'number'\n                  },\n                  {\n                    type: 'boolean'\n                  }\n                ]\n              }\n            }\n          },\n          required: [            'type'\n          ]\n        }\n      },\n      required: [        'id',\n        'label',\n        'name',\n        'schema'\n      ]\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "label": {
-                    "description": "Human readable name of the custom metadata "
-                    "field. This should be unique across all non "
-                    "deleted custom metadata fields. This name is "
-                    "displayed as form field label to the users "
-                    "while setting field value on an asset in the "
-                    "media library UI.",
-                    "type": "string",
-                },
-                "name": {
-                    "description": "API name of the custom metadata field. This "
-                    "should be unique across all (including deleted) "
-                    "custom metadata fields.",
-                    "type": "string",
-                },
-                "schema": {
-                    "properties": {
-                        "default_value": {
-                            "anyOf": [
-                                {"type": "string"},
-                                {"type": "number"},
-                                {"type": "boolean"},
-                                {
-                                    "description": "Default "
-                                    "value "
-                                    "should "
-                                    "be "
-                                    "of "
-                                    "type "
-                                    "array "
-                                    "when "
-                                    "custom "
-                                    "metadata "
-                                    "field "
-                                    "type "
-                                    "is "
-                                    "set "
-                                    "to "
-                                    "`MultiSelect`.\n",
-                                    "items": {
-                                        "anyOf": [
-                                            {"type": "string"},
-                                            {"type": "number"},
-                                            {"type": "boolean"},
-                                        ]
-                                    },
-                                    "title": "Mixed",
-                                    "type": "array",
-                                },
-                            ],
-                            "description": "The default "
-                            "value for "
-                            "this custom "
-                            "metadata "
-                            "field. This "
-                            "property is "
-                            "only required "
-                            "if "
-                            "`isValueRequired` "
-                            "property is "
-                            "set to "
-                            "`true`. The "
-                            "value should "
-                            "match the "
-                            "`type` of "
-                            "custom "
-                            "metadata "
-                            "field.\n",
-                        },
-                        "is_value_required": {
-                            "description": "Sets this "
-                            "custom "
-                            "metadata "
-                            "field as "
-                            "required. "
-                            "Setting "
-                            "custom "
-                            "metadata "
-                            "fields on "
-                            "an asset "
-                            "will "
-                            "throw "
-                            "error if "
-                            "the value "
-                            "for all "
-                            "required "
-                            "fields "
-                            "are not "
-                            "present "
-                            "in upload "
-                            "or update "
-                            "asset API "
-                            "request "
-                            "body.\n",
-                            "type": "boolean",
-                        },
-                        "max_length": {
-                            "description": "Maximum length "
-                            "of string. Only "
-                            "set this "
-                            "property if "
-                            "`type` is set to "
-                            "`Text` or "
-                            "`Textarea`.\n",
-                            "type": "number",
-                        },
-                        "max_value": {
-                            "anyOf": [{"type": "string"}, {"type": "number"}],
-                            "description": "Maximum value of "
-                            "the field. Only "
-                            "set this property "
-                            "if field type is "
-                            "`Date` or "
-                            "`Number`. For "
-                            "`Date` type "
-                            "field, set the "
-                            "minimum date in "
-                            "ISO8601 string "
-                            "format. For "
-                            "`Number` type "
-                            "field, set the "
-                            "minimum numeric "
-                            "value.\n",
-                        },
-                        "min_length": {
-                            "description": "Minimum length "
-                            "of string. Only "
-                            "set this "
-                            "property if "
-                            "`type` is set to "
-                            "`Text` or "
-                            "`Textarea`.\n",
-                            "type": "number",
-                        },
-                        "min_value": {
-                            "anyOf": [{"type": "string"}, {"type": "number"}],
-                            "description": "Minimum value of "
-                            "the field. Only "
-                            "set this property "
-                            "if field type is "
-                            "`Date` or "
-                            "`Number`. For "
-                            "`Date` type "
-                            "field, set the "
-                            "minimum date in "
-                            "ISO8601 string "
-                            "format. For "
-                            "`Number` type "
-                            "field, set the "
-                            "minimum numeric "
-                            "value.\n",
-                        },
-                        "select_options": {
-                            "description": "An array of "
-                            "allowed "
-                            "values. This "
-                            "property is "
-                            "only "
-                            "required if "
-                            "`type` "
-                            "property is "
-                            "set to "
-                            "`SingleSelect` "
-                            "or "
-                            "`MultiSelect`.\n",
-                            "items": {
-                                "anyOf": [
-                                    {"type": "string"},
-                                    {"type": "number"},
-                                    {"type": "boolean"},
-                                ]
-                            },
-                            "type": "array",
-                        },
-                        "type": {
-                            "description": "Type of the custom metadata field.",
-                            "enum": [
-                                "Text",
-                                "Textarea",
-                                "Number",
-                                "Date",
-                                "Boolean",
-                                "SingleSelect",
-                                "MultiSelect",
-                            ],
-                            "type": "string",
-                        },
-                    },
-                    "required": ["type"],
-                    "type": "object",
-                },
-            },
-            "required": ["label", "name", "schema"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Create a new custom metadata field that can be assigned to ImageKit assets."
+    ),
 )
 async def create_custom_metadata_fields_tool(
     label: str,
@@ -273,14 +61,41 @@ async def create_custom_metadata_fields_tool(
     schema: Dict[str, Any],
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Create a new custom metadata field.
+    """Create a new custom metadata field.
 
-    Use this to define custom metadata keys that can be set on assets via
-    upload or update APIs.
+    This tool defines a new custom metadata field that can later be
+    populated on assets using the upload or update APIs. Once created,
+    the field becomes available in both the Media Library UI and
+    programmatic workflows.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    Custom metadata fields are strongly typed and validated based on
+    the provided schema (e.g., text, number, date, select options).
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        label: Human-readable name of the custom metadata field. This
+            value is shown to users in the Media Library UI and must be
+            unique among non-deleted custom metadata fields.
+        name: API-safe name of the custom metadata field. This value is
+            used as the key when setting `customMetadata` on assets and
+            must be globally unique (including deleted fields).
+        schema: Schema definition describing the type, validation rules,
+            and constraints for the custom metadata field. At minimum,
+            the schema must include a `type` value.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.id`, `.name`, `.schema.type`
+
+    Returns:
+        A dictionary containing details of the newly created custom
+        metadata field, typically including:
+            - id: Unique identifier of the custom metadata field.
+            - label: Human-readable field label.
+            - name: API name of the field.
+            - schema: Validation and type rules for the field.
     """
     return await create_custom_metadata_fields(
         label=label,

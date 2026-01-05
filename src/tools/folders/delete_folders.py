@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -46,46 +46,31 @@ async def delete_folders(
 
 @tool(
     name="delete_folders",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will delete a folder and all its contents permanently. The API returns an empty response.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "folder_path": {
-                    "description": "Full path to the folder you want to "
-                    "delete. For example "
-                    "`/folder/to/delete/`.\n",
-                    "type": "string",
-                },
-            },
-            "required": ["folder_path"],
-            "type": "object",
-        }
-    },
 )
 async def delete_folders_tool(
     folder_path: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Delete a folder and all its contents permanently.
+    """Permanently delete a folder and all its nested contents.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool deletes a folder, including all nested sub-folders, files,
+    and file versions. The deletion is irreversible and results in an
+    empty response from the API.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec`, even though the response is typically
+    empty.
+
+    Args:
+        folder_path: The full path of the folder to be deleted.
+            Example: `/folder/to/delete/`
+        filter_spec: Optional glom-style filter specification. Included
+            for consistency with other tools, though the response
+            payload is usually empty.
+
+    Returns:
+        An empty dictionary, indicating the folder was deleted
+        successfully.
     """
     return await delete_folders(
         folder_path=folder_path,

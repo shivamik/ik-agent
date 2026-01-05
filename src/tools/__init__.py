@@ -90,57 +90,57 @@ tools = [
     # get_accounts_origins_tool,
     # list_accounts_origins_tool,
     # URL Endpoints tools
-    create_accounts_url_endpoints_tool,
-    get_accounts_url_endpoints_tool,
-    list_accounts_url_endpoints_tool,
-    update_accounts_url_endpoints_tool,
-    delete_accounts_url_endpoints_tool,
-    # usage tools
-    get_accounts_usage_tool,
-    # assets tools
-    list_assets_tool,
-    # upload v2
+    # create_accounts_url_endpoints_tool,
+    # get_accounts_url_endpoints_tool,
+    # list_accounts_url_endpoints_tool,
+    # update_accounts_url_endpoints_tool,
+    # delete_accounts_url_endpoints_tool,
+    # # usage tools
+    # get_accounts_usage_tool,
+    # # assets tools
+    # list_assets_tool,
+    # # upload v2
     upload_v2_beta_files_tool,
-    # cache tools
-    create_cache_invalidation_tool,
-    get_cache_invalidation_tool,
-    # custom metadata fields tools
-    create_custom_metadata_fields_tool,
-    delete_custom_metadata_fields_tool,
-    list_custom_metadata_fields_tool,
-    update_custom_metadata_fields_tool,
-    # files tools
-    copy_files_tool,
-    delete_files_tool,
-    get_files_tool,
-    move_files_tool,
-    rename_files_tool,
-    update_files_tool,
-    upload_files_tool,
-    delete_files_tool,
-    # bulk ops tools
-    add_tags_files_bulk_tool,
-    delete_files_bulk_tool,
-    remove_ai_tags_files_bulk_tool,
-    remove_tags_files_bulk_tool,
-    # meta data tools
-    get_files_metadata_tool,
-    get_from_url_files_metadata_tool,
-    # versions
-    get_files_versions_tool,
-    list_files_versions_tool,
-    delete_files_versions_tool,
-    restore_files_versions_tool,
-    # folders tools
-    copy_folders_tool,
-    create_folders_tool,
-    delete_folders_tool,
-    move_folders_tool,
-    rename_folders_tool,
-    # folder jobs tools
-    get_folders_job_tool,
-    # general tools
-    get_dates_tool,
-    # search docs tool
-    search_docs_tool,
+    # # cache tools
+    # create_cache_invalidation_tool,
+    # get_cache_invalidation_tool,
+    # # custom metadata fields tools
+    # create_custom_metadata_fields_tool,
+    # delete_custom_metadata_fields_tool,
+    # list_custom_metadata_fields_tool,
+    # update_custom_metadata_fields_tool,
+    # # files tools
+    # copy_files_tool,
+    # delete_files_tool,
+    # get_files_tool,
+    # move_files_tool,
+    # rename_files_tool,
+    # update_files_tool,
+    # upload_files_tool,
+    # delete_files_tool,
+    # # bulk ops tools
+    # add_tags_files_bulk_tool,
+    # delete_files_bulk_tool,
+    # remove_ai_tags_files_bulk_tool,
+    # remove_tags_files_bulk_tool,
+    # # meta data tools
+    # get_files_metadata_tool,
+    # get_from_url_files_metadata_tool,
+    # # versions
+    # get_files_versions_tool,
+    # list_files_versions_tool,
+    # delete_files_versions_tool,
+    # restore_files_versions_tool,
+    # # folders tools
+    # copy_folders_tool,
+    # create_folders_tool,
+    # delete_folders_tool,
+    # move_folders_tool,
+    # rename_folders_tool,
+    # # folder jobs tools
+    # get_folders_job_tool,
+    # # general tools
+    # get_dates_tool,
+    # # search docs tool
+    # search_docs_tool,
 ]

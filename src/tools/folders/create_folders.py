@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -49,68 +49,38 @@ async def create_folders(
 @tool(
     name="create_folders",
     description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will create a new folder. You can specify the folder name and location of the parent folder where this new folder should be created.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "folder_name": {
-                    "description": "The folder will be created with this "
-                    "name. \n"
-                    "\n"
-                    "All characters except alphabets and "
-                    "numbers (inclusive of unicode letters, "
-                    "marks, and numerals in other languages) "
-                    "will be replaced by an underscore i.e. "
-                    "`_`.\n",
-                    "type": "string",
-                },
-                "parent_folder_path": {
-                    "description": "The folder where the new folder "
-                    "should be created, for root use "
-                    "`/` else the path e.g. "
-                    "`containing/folder/`.\n"
-                    "\n"
-                    "Note: If any folder(s) is not "
-                    "present in the parentFolderPath "
-                    "parameter, it will be "
-                    "automatically created. For "
-                    "example, if you pass "
-                    "`/product/images/summer`, then "
-                    "`product`, `images`, and `summer` "
-                    "folders will be created if they "
-                    "don't already exist.\n",
-                    "type": "string",
-                },
-            },
-            "required": ["folder_name", "parent_folder_path"],
-            "type": "object",
-        }
-    },
 )
 async def create_folders_tool(
     folder_name: str,
     parent_folder_path: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Create a new folder in the media library.
+    """Create a new folder in the ImageKit media library.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool creates a folder with the given name under the specified
+    parent folder path. If any part of the parent folder path does not
+    already exist, it will be created automatically.
+
+    Folder names are sanitized automatically: all characters except
+    alphabets, numbers (including unicode characters), and hyphens (`-`)
+    are replaced with underscores (`_`).
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        folder_name: Name of the folder to be created.
+        parent_folder_path: Path of the parent folder where the new
+            folder should be created. Use `/` for the root folder.
+            Example: `/product/images/`
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.name`
+
+    Returns:
+        An empty dictionary, indicating the folder was created
+        successfully.
     """
     return await create_folders(
         folder_name=folder_name,

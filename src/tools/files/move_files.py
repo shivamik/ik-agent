@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -49,50 +49,39 @@ async def move_files(
 
 @tool(
     name="move_files",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will move a file and all its versions from one folder to another. \n\nNote: If any file at the destination has the same name as the source file, then the source file and its versions will be appended to the destination file.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "destination_path": {
-                    "description": "Full path to the folder you want to "
-                    "move the above file into.\n",
-                    "type": "string",
-                },
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "source_file_path": {
-                    "description": "The full path of the file you want to move.\n",
-                    "type": "string",
-                },
-            },
-            "required": ["destination_path", "source_file_path"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Move an ImageKit file into another folder, including all of its versions."
+    ),
 )
 async def move_files_tool(
     destination_path: str,
     source_file_path: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Move a file and all its versions from one folder to another.
+    """Move a file and all its versions to another folder.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool moves a file from the source path into the specified
+    destination folder. All versions of the file are moved as part
+    of the operation.
+
+    If a file with the same name already exists at the destination,
+    the source file and its versions are appended to the destination
+    file rather than overwriting it.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        destination_path: Full path of the destination folder where
+            the file will be moved.
+        source_file_path: Full path of the file to be moved.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.name`
+
+    Returns:
+        An empty dictionary, indicating the file was moved successfully.
     """
     return await move_files(
         destination_path=destination_path,

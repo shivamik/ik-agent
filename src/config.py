@@ -1,11 +1,9 @@
 import os
-import json
 import logging
 import typesense
 from typesense import Client
 from openai import AsyncOpenAI
-
-from typing import Any, Dict, Optional
+from pathlib import Path
 
 
 logger = logging.getLogger()
@@ -94,3 +92,6 @@ def _ensure_conversation_model(client: Client) -> None:
 
 OPENAI_CLIENT = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 TYPESENSE_CLIENT = _get_typesense_client()
+
+
+TEMP_DIR = Path("temp")

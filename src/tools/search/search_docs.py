@@ -3,7 +3,7 @@ import os
 
 from typing import Any, Dict, List, Optional
 from strands import tool
-from src.utils import (
+from src.utils.utils import (
     embed_query,
     detect_sources,
     get_query_keywords_using_model,
@@ -73,41 +73,40 @@ async def search_docs(
             This tool cannot create, modify, copy, move, save or delete any images or files.
             This is only a question answering tool.
             """,
-    inputSchema={
-        "type": "object",
-        "properties": {
-            "query": {"type": "string"},
-            "sources": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "Optional source overrides.",
-            },
-            "conversation_id": {
-                "type": "string",
-                "description": "Optional Typesense conversation id.",
-            },
-        },
-        "required": ["query"],
-    },
 )
 async def search_docs_tool(
     query: str,
     sources: Optional[List[str]] = None,
     conversation_id: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """
-    Search ImageKit docs with Typesense RAG and return the conversation response.
+    """Search ImageKit documentation and return a grounded conversational answer.
+
+    This Strands tool is a thin wrapper around `search_docs` that post-processes
+    the Typesense response to return only the relevant conversational fields
+    (answer and conversation ID).
+
+    Args:
+        query: The user's question about ImageKit features, APIs, pricing,
+            transformations, or related topics.
+        sources: Optional list of content sources to scope the search.
+        conversation_id: Optional Typesense conversation ID to maintain
+            conversational continuity across multiple queries.
+
+    Returns:
+        A dictionary containing:
+            - answer: The grounded natural-language answer.
+            - conversation_id: The Typesense conversation identifier, if present.
     """
     result = await search_docs(
         query=query,
         sources=sources,
         conversation_id=conversation_id,
     )
-    result = maybe_filter(
+
+    return maybe_filter(
         {
             "answer": "conversation.answer",
             "conversation_id": "conversation.conversation_id",
         },
         result,
     )
-    return result

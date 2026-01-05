@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional, Sequence
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -49,55 +49,34 @@ async def add_tags_files_bulk(
 
 @tool(
     name="add_tags_files_bulk",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API adds tags to multiple files in bulk. A maximum of 50 files can be specified at a time.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    successfullyUpdatedFileIds: {\n      type: 'array',\n      description: 'An array of fileIds that in which tags were successfully added.\\n',\n      items: {\n        type: 'string'\n      }\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "file_ids": {
-                    "description": "An array of fileIds to which you want to add "
-                    "tags.\n",
-                    "items": {"type": "string"},
-                    "type": "array",
-                },
-                "filter_spec": {
-                    "description": "A glom spec to apply to the response to "
-                    "include certain fields. Consult the output "
-                    "schema in the tool description to see the "
-                    "fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "glom spec",
-                    "type": "string",
-                },
-                "tags": {
-                    "description": "An array of tags that you want to add to the "
-                    "files.\n",
-                    "items": {"type": "string"},
-                    "type": "array",
-                },
-            },
-            "required": ["file_ids", "tags"],
-            "type": "object",
-        }
-    },
+    description=("Add tags to multiple ImageKit files in a single bulk operation."),
 )
 async def add_tags_files_bulk_tool(
     file_ids: Sequence[str],
     tags: Sequence[str],
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Add tags to multiple files in bulk.
+    """Add tags to multiple files in bulk.
 
-    Provide up to 50 file IDs per request.
+    This tool adds one or more tags to multiple files in a single request.
+    A maximum of 50 file IDs can be processed per call.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        file_ids: Sequence of file IDs to which tags should be added.
+            Maximum allowed is 50 file IDs per request.
+        tags: Sequence of tags to add to the specified files.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.successfullyUpdatedFileIds`
+
+    Returns:
+        A dictionary containing the bulk operation result, typically:
+            - successfullyUpdatedFileIds: List of file IDs for which
+              tags were successfully added.
     """
     return await add_tags_files_bulk(
         file_ids=file_ids,

@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -44,41 +44,38 @@ async def get_folders_job(
 
 @tool(
     name="get_folders_job",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API returns the status of a bulk job like copy and move folder operations.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    jobId: {\n      type: 'string',\n      description: 'Unique identifier of the bulk job.\\n'\n    },\n    purgeRequestId: {\n      type: 'string',\n      description: 'Unique identifier of the purge request. This will be present only if `purgeCache` is set to `true` in the rename folder API request.\\n'\n    },\n    status: {\n      type: 'string',\n      description: 'Status of the bulk job.',\n      enum: [        'Pending',\n        'Completed'\n      ]\n    },\n    type: {\n      type: 'string',\n      description: 'Type of the bulk job.',\n      enum: [        'COPY_FOLDER',\n        'MOVE_FOLDER',\n        'RENAME_FOLDER'\n      ]\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "job_id": {"type": "string"},
-            },
-            "required": ["job_id"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Retrieve the status of an ImageKit bulk folder job such as copy, "
+        "move, or rename."
+    ),
 )
 async def get_folders_job_tool(
     job_id: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Retrieve status of a bulk job (copy/move/rename folder).
+    """Retrieve the status of a bulk folder operation.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool returns the current status and metadata for an asynchronous
+    bulk job initiated by folder copy, move, or rename operations.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        job_id: Unique identifier of the bulk job to query.
+        filter_spec: Optional glom-style filter specification used to reduce
+            the response payload by selecting specific fields.
+            Example: `.status`
+
+    Returns:
+        A dictionary containing bulk job details, typically:
+            - jobId: Unique identifier of the bulk job.
+            - status: Current status of the job (`Pending` or `Completed`).
+            - type: Type of bulk job (e.g. `COPY_FOLDER`, `MOVE_FOLDER`,
+              `RENAME_FOLDER`).
+            - purgeRequestId: Identifier of the purge request, present only
+              for rename operations with cache purging enabled.
     """
     return await get_folders_job(
         job_id=job_id,

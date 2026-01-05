@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -54,51 +54,12 @@ async def copy_folders(
 
 @tool(
     name="copy_folders",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis will copy one folder into another. The selected folder, its nested folders, files, and their versions (in `includeVersions` is set to true) are copied in this operation. Note: If any file at the destination has the same name as the source file, then the source file and its versions will be appended to the destination file version history.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  title: 'Async Bulk Job Response',\n  description: 'Job submitted successfully. A `jobId` will be returned.',\n  properties: {\n    jobId: {\n      type: 'string',\n      description: 'Unique identifier of the bulk job. This can be used to check the status of the bulk job.\\n'\n    }\n  },\n  required: [    'jobId'\n  ]\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "destination_path": {
-                    "description": "Full path to the destination folder "
-                    "where you want to copy the source "
-                    "folder into.\n",
-                    "type": "string",
-                },
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "include_versions": {
-                    "description": "Option to copy all versions of files "
-                    "that are nested inside the selected "
-                    "folder. By default, only the current "
-                    "version of each file will be copied. "
-                    "When set to true, all versions of "
-                    "each file will be copied. Default "
-                    "value - `false`.\n",
-                    "type": "boolean",
-                },
-                "source_folder_path": {
-                    "description": "The full path to the source folder "
-                    "you want to copy.\n",
-                    "type": "string",
-                },
-            },
-            "required": ["destination_path", "source_folder_path"],
-            "type": "object",
-        }
-    },
+    description=(
+        "Copy an ImageKit folder into another folder and optionally include "
+        "all file versions.\n\n"
+        "This operation runs as an asynchronous bulk job and returns a job ID "
+        "that can be used to track progress."
+    ),
 )
 async def copy_folders_tool(
     destination_path: str,
@@ -106,11 +67,38 @@ async def copy_folders_tool(
     include_versions: Optional[bool] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Copy a folder and its contents to another folder.
+    """Copy a folder and all its nested contents to another folder.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool copies a source folder into a destination folder. The source
+    folder, its nested sub-folders, files, and their versions are duplicated
+    as part of a single asynchronous bulk operation.
+
+    If a file in the destination folder has the same name as a source file,
+    the source file and its versions are appended to the destination file’s
+    version history instead of overwriting the file.
+
+    By default, only the current version of each file is copied. When
+    `include_versions` is set to `True`, all available versions of each
+    file are copied.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        destination_path: The full path of the destination folder where
+            the source folder will be copied.
+        source_folder_path: The full path of the folder to be copied.
+        include_versions: Whether to copy all versions of files contained
+            within the source folder. Defaults to `False`.
+        filter_spec: Optional glom-style filter specification used to reduce
+            the response payload by selecting specific fields.
+            Example: `.jobId`
+
+    Returns:
+        A dictionary containing the submitted bulk job details, typically:
+            - jobId: Unique identifier for the asynchronous bulk job, which
+              can be used to query job status.
     """
     return await copy_folders(
         destination_path=destination_path,

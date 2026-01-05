@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -50,43 +50,37 @@ async def delete_files_versions(
 
 @tool(
     name="delete_files_versions",
-    description="When using this tool, always use the `filter_spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API deletes a non-current file version permanently. The API returns an empty response.\n\nNote: If you want to delete all versions of a file, use the delete file API.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "file_id": {"type": "string"},
-                "filter_spec": {
-                    "description": "A filter_spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "version_id": {"type": "string"},
-            },
-            "required": ["file_id", "version_id"],
-            "type": "object",
-        }
-    },
+    description=("Permanently delete a non-current version of an ImageKit file."),
 )
 async def delete_files_versions_tool(
     version_id: str,
     file_id: Optional[str] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Delete a non-current file version permanently.
+    """Permanently delete a non-current file version.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    This tool deletes a specific non-current version of a file.
+    The current (latest) version of the file cannot be deleted using
+    this API. To delete all versions of a file, use the `delete_files`
+    tool instead.
+
+    The operation is destructive and irreversible, and the API
+    returns an empty response on success.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec`, even though the response is typically
+    empty.
+
+    Args:
+        version_id: Unique identifier of the file version to delete.
+        file_id: Optional identifier of the parent file. Provided for
+            additional validation or disambiguation when required.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload.
+
+    Returns:
+        An empty dictionary, indicating the file version was deleted
+        successfully.
     """
     return await delete_files_versions(
         version_id=version_id,

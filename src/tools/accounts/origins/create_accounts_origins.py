@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -91,308 +91,7 @@ async def create_accounts_origins(
 
 @tool(
     name="create_accounts_origins",
-    description="**Note:** This API is currently in beta.  \nCreates a new origin and returns the origin object.\n",
-    inputSchema={
-        "json": {
-            "anyOf": [
-                {
-                    "properties": {
-                        "access_key": {
-                            "description": "Access key for the bucket.",
-                            "type": "string",
-                        },
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "bucket": {"description": "S3 bucket name.", "type": "string"},
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "prefix": {
-                            "description": "Path prefix inside the bucket.",
-                            "type": "string",
-                        },
-                        "secret_key": {
-                            "description": "Secret key for the bucket.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["S3"], "type": "string"},
-                    },
-                    "required": ["access_key", "bucket", "name", "secret_key", "type"],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "access_key": {
-                            "description": "Access key for the bucket.",
-                            "type": "string",
-                        },
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "bucket": {"description": "S3 bucket name.", "type": "string"},
-                        "endpoint": {
-                            "description": "Custom S3-compatible endpoint.",
-                            "type": "string",
-                        },
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "prefix": {
-                            "description": "Path prefix inside the bucket.",
-                            "type": "string",
-                        },
-                        "s3_force_path_style": {
-                            "description": "Use path-style S3 URLs?",
-                            "type": "boolean",
-                        },
-                        "secret_key": {
-                            "description": "Secret key for the bucket.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["S3_COMPATIBLE"], "type": "string"},
-                    },
-                    "required": [
-                        "access_key",
-                        "bucket",
-                        "endpoint",
-                        "name",
-                        "secret_key",
-                        "type",
-                    ],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "access_key": {
-                            "description": "Access key for the bucket.",
-                            "type": "string",
-                        },
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "bucket": {"description": "S3 bucket name.", "type": "string"},
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "prefix": {
-                            "description": "Path prefix inside the bucket.",
-                            "type": "string",
-                        },
-                        "secret_key": {
-                            "description": "Secret key for the bucket.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["CLOUDINARY_BACKUP"], "type": "string"},
-                    },
-                    "required": ["access_key", "bucket", "name", "secret_key", "type"],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "base_url": {
-                            "description": "Root URL for the web folder origin.",
-                            "type": "string",
-                        },
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "forward_host_header_to_origin": {
-                            "description": "Forward the Host header to origin?",
-                            "type": "boolean",
-                        },
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["WEB_FOLDER"], "type": "string"},
-                    },
-                    "required": ["base_url", "name", "type"],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["WEB_PROXY"], "type": "string"},
-                    },
-                    "required": ["name", "type"],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "bucket": {"type": "string"},
-                        "client_email": {"type": "string"},
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "prefix": {"type": "string"},
-                        "private_key": {"type": "string"},
-                        "type": {"enum": ["GCS"], "type": "string"},
-                    },
-                    "required": [
-                        "bucket",
-                        "client_email",
-                        "name",
-                        "private_key",
-                        "type",
-                    ],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "account_name": {"type": "string"},
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "container": {"type": "string"},
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "prefix": {"type": "string"},
-                        "sas_token": {"type": "string"},
-                        "type": {"enum": ["AZURE_BLOB"], "type": "string"},
-                    },
-                    "required": [
-                        "account_name",
-                        "container",
-                        "name",
-                        "sas_token",
-                        "type",
-                    ],
-                    "type": "object",
-                },
-                {
-                    "properties": {
-                        "base_url": {
-                            "description": "Akeneo instance base URL.",
-                            "type": "string",
-                        },
-                        "base_url_for_canonical_header": {
-                            "description": "URL used in "
-                            "the "
-                            "Canonical "
-                            "header (if "
-                            "enabled).",
-                            "type": "string",
-                        },
-                        "client_id": {
-                            "description": "Akeneo API client ID.",
-                            "type": "string",
-                        },
-                        "client_secret": {
-                            "description": "Akeneo API client secret.",
-                            "type": "string",
-                        },
-                        "include_canonical_header": {
-                            "description": "Whether to send a Canonical header.",
-                            "type": "boolean",
-                        },
-                        "name": {
-                            "description": "Display name of the origin.",
-                            "type": "string",
-                        },
-                        "password": {
-                            "description": "Akeneo API password.",
-                            "type": "string",
-                        },
-                        "type": {"enum": ["AKENEO_PIM"], "type": "string"},
-                        "username": {
-                            "description": "Akeneo API username.",
-                            "type": "string",
-                        },
-                    },
-                    "required": [
-                        "base_url",
-                        "client_id",
-                        "client_secret",
-                        "name",
-                        "password",
-                        "type",
-                        "username",
-                    ],
-                    "type": "object",
-                },
-            ],
-            "type": "object",
-        }
-    },
+    description="Create a new origin for an account (beta).",
 )
 async def create_accounts_origins_tool(
     type: str,
@@ -418,10 +117,45 @@ async def create_accounts_origins_tool(
     username: Optional[str] = None,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Create a new origin (beta).
+    """Create a new origin (beta).
 
-    Prefer `filter_spec` to reduce response size when possible.
+    This API supports multiple origin types. The required parameters
+    depend on the selected `type`.
+
+    Supported origin types and key fields:
+
+    - **S3**
+      Required: access_key, secret_key, bucket, name
+      Optional: prefix, include_canonical_header, base_url_for_canonical_header
+
+    - **S3_COMPATIBLE**
+      Required: access_key, secret_key, bucket, endpoint, name
+      Optional: prefix, s3_force_path_style, include_canonical_header
+
+    - **CLOUDINARY_BACKUP**
+      Required: access_key, secret_key, bucket, name
+
+    - **WEB_FOLDER**
+      Required: base_url, name
+      Optional: forward_host_header_to_origin, include_canonical_header
+
+    - **WEB_PROXY**
+      Required: name
+
+    - **GCS**
+      Required: bucket, client_email, private_key, name
+      Optional: prefix, include_canonical_header
+
+    - **AZURE_BLOB**
+      Required: account_name, container, sas_token, name
+      Optional: prefix, include_canonical_header
+
+    - **AKENEO_PIM**
+      Required: base_url, client_id, client_secret, username, password, name
+
+    The backend API validates required fields based on `type`.
+
+    Use `filter_spec` to reduce response size when possible.
     """
     return await create_accounts_origins(
         type=type,

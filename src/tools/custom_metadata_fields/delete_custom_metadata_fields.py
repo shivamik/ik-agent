@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -45,38 +45,36 @@ async def delete_custom_metadata_fields(
 
 @tool(
     name="delete_custom_metadata_fields",
-    description="When using this tool, always use the `glom spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API deletes a custom metadata field. Even after deleting a custom metadata field, you cannot create any new custom metadata field with the same name.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {}\n}\n```",
-    inputSchema={
-        "json": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string",
-                },
-                "filter_spec": {
-                    "type": "string",
-                    "title": "filter_spec",
-                    "description": 'A filter_spec to apply to the response to include certain fields. Consult the output schema in the tool description to see the fields that are available.\n\nFor example: to include only the `name` field in every object of a results array, you can provide ".results[].name".\n\nFor more information, see the [glomdocumentation](http://glom.readthedocs.io/).',
-                },
-            },
-            "required": ["id"],
-        },
-        "annotations": {
-            "idempotentHint": "true",
-        },
-    },
+    description=(
+        "Delete a custom metadata field from ImageKit by its unique identifier."
+    ),
 )
 async def delete_custom_metadata_fields_tool(
     id: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Delete a custom metadata field by ID.
+    """Delete a custom metadata field.
 
-    This operation is idempotent. Once deleted, the field name cannot be reused.
+    This tool deletes an existing custom metadata field using its unique
+    identifier. The operation is idempotent—repeating the request for the
+    same field ID has no additional effect.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    Once deleted, the metadata field name is permanently reserved and
+    cannot be reused for creating a new custom metadata field.
+
+    To reduce response size and improve performance, it is recommended
+    to provide a `filter_spec` to select only the fields required from
+    the response.
+
+    Args:
+        id: Unique identifier of the custom metadata field to delete.
+        filter_spec: Optional glom-style filter specification used to
+            reduce the response payload by selecting specific fields.
+            Example: `.id`, `.name`
+
+    Returns:
+        An empty dictionary indicating the custom metadata field was
+        successfully deleted.
     """
     return await delete_custom_metadata_fields(
         id=id,

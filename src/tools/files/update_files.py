@@ -51,127 +51,9 @@ async def update_files(
 @tool(
     name="update_files",
     description=(
-        "This API updates the details or attributes of the current version of the file. "
-        "You can update tags, customCoordinates, customMetadata, publication status, "
-        "remove existing AITags and apply extensions using this API."
+        "Update metadata, tags, publication status, or apply extensions to an "
+        "ImageKit file."
     ),
-    inputSchema={
-        "type": "object",
-        "$defs": {
-            "extensions": {
-                "description": "Array of extensions to be applied to the asset.",
-                "type": "array",
-                "items": {
-                    "anyOf": [
-                        {
-                            "type": "object",
-                            "title": "Remove background",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "enum": ["remove-bg"],
-                                },
-                                "options": {
-                                    "type": "object",
-                                    "properties": {
-                                        "add_shadow": {"type": "boolean"},
-                                        "bg_color": {"type": "string"},
-                                        "bg_image_url": {"type": "string"},
-                                        "semitransparency": {"type": "boolean"},
-                                    },
-                                },
-                            },
-                            "required": ["name"],
-                        },
-                        {
-                            "type": "object",
-                            "title": "Auto tagging",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "enum": [
-                                        "google-auto-tagging",
-                                        "aws-auto-tagging",
-                                    ],
-                                },
-                                "max_tags": {"type": "integer"},
-                                "min_confidence": {"type": "integer"},
-                            },
-                            "required": ["name", "max_tags", "min_confidence"],
-                        },
-                        {
-                            "type": "object",
-                            "title": "Auto description",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "enum": ["ai-auto-description"],
-                                }
-                            },
-                            "required": ["name"],
-                        },
-                    ]
-                },
-            }
-        },
-        "properties": {
-            "file_id": {
-                "type": "string",
-                "description": "ID of the file to update",
-            },
-            # -------- metadata / extension updates --------
-            "custom_coordinates": {
-                "type": "string",
-                "description": "x,y,width,height",
-            },
-            "custom_metadata": {
-                "type": "object",
-                "additionalProperties": True,
-                "description": "Custom metadata key-value pairs",
-            },
-            "description": {
-                "type": "string",
-            },
-            "extensions": {
-                "$ref": "#/$defs/extensions",
-            },
-            "remove_ai_tags": {
-                "description": "AITags to remove or 'all'",
-                "anyOf": [
-                    {
-                        "type": "array",
-                        "items": {"type": "string"},
-                    },
-                    {
-                        "type": "string",
-                        "enum": ["all"],
-                    },
-                ],
-            },
-            "tags": {
-                "type": "array",
-                "items": {"type": "string"},
-            },
-            "webhook_url": {
-                "type": "string",
-            },
-            # -------- publish block --------
-            "publish": {
-                "type": "object",
-                "description": "Configure publication status",
-                "properties": {
-                    "include_file_versions": {
-                        "type": "boolean",
-                    },
-                    "is_published": {
-                        "type": "boolean",
-                    },
-                },
-                "required": ["is_published"],
-            },
-        },
-        "required": ["file_id"],
-    },
 )
 async def update_files_tool(
     file_id: str,
@@ -184,11 +66,45 @@ async def update_files_tool(
     webhook_url: Optional[str] = None,
     publish: Optional[Dict[str, Any]] = None,
 ) -> Any:
-    """
-    Update details of the current version of a file.
+    """Update attributes of the current version of a file.
+
+    This tool updates metadata and attributes of the current version of
+    an ImageKit file. Supported updates include tags, custom metadata,
+    coordinates, description, AI tag removal, publication status, and
+    applying AI or media processing extensions.
+
+    Extensions such as background removal, auto-tagging, and auto-
+    description can be applied as part of this operation.
+
+    **Exclusivity rule**:
+    The `publish` operation is mutually exclusive with all other update
+    fields. If `publish` is provided, no other update parameters may be
+    set.
+
+    Args:
+        file_id: Unique identifier of the file to update.
+        custom_coordinates: Custom coordinates in `x,y,width,height` format.
+        custom_metadata: Custom metadata key-value pairs to associate with
+            the file.
+        description: Human-readable description of the file contents.
+        extensions: Optional list of extensions to apply to the file,
+            such as background removal, auto-tagging, or auto-description.
+        remove_ai_tags: AI tags to remove, or `"all"` to remove all AI tags.
+        tags: List of user-defined tags to assign to the file.
+        webhook_url: Optional webhook URL to receive async extension updates.
+        publish: Publication configuration. When provided, it must contain
+            `is_published` and may optionally include
+            `include_file_versions`.
+
+    Raises:
+        ValueError: If `publish` is provided together with other update fields.
+
+    Returns:
+        A response indicating the update was applied successfully. The
+        response structure depends on the update operation performed.
     """
 
-    # Optional: enforce original OpenAPI exclusivity
+    # Enforce OpenAPI exclusivity: publish cannot be combined with other updates
     if publish is not None:
         if any(
             v is not None

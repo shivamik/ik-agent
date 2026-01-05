@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from strands import tool
 
 from src.clients import CLIENT
-from src.utils import maybe_filter
+from src.utils.utils import maybe_filter
 
 
 METADATA: Dict[str, Any] = {
@@ -45,44 +45,33 @@ async def get_cache_invalidation(
 
 @tool(
     name="get_cache_invalidation",
-    description="When using this tool, always use the `glom spec` parameter to reduce the response size and improve performance.\n\nOnly omit if you're sure you don't need the data.\n\nThis API returns the status of a purge cache request.\n\n\n# Response Schema\n```json\n{\n  type: 'object',\n  properties: {\n    status: {\n      type: 'string',\n      description: 'Status of the purge request.',\n      enum: [        'Pending',\n        'Completed'\n      ]\n    }\n  }\n}\n```",
-    inputSchema={
-        "json": {
-            "properties": {
-                "filter_spec": {
-                    "description": "A glom spec to apply to the response to "
-                    "include certain fields. Consult the "
-                    "output schema in the tool description to "
-                    "see the fields that are available.\n"
-                    "\n"
-                    "For example: to include only the `name` "
-                    "field in every object of a results array, "
-                    'you can provide ".results[].name".\n'
-                    "\n"
-                    "For more information, see the [glom"
-                    "documentation](http://glom.readthedocs.io/).",
-                    "title": "filter_spec",
-                    "type": "string",
-                },
-                "request_id": {"type": "string"},
-            },
-            "required": ["request_id"],
-            "type": "object",
-        }
-    },
+    description="Get the status of a cache invalidation request.",
 )
 async def get_cache_invalidation_tool(
     request_id: str,
     filter_spec: Optional[Any] = None,
 ) -> Dict[str, Any]:
-    """
-    Get the status of a cache invalidation request.
+    """Retrieve the status of a cache purge request.
 
-    Use the request ID from the purge call to check whether the purge
-    is Pending or Completed.
+    Use this tool to check whether a previously issued cache invalidation
+    request has completed. Cache invalidation is asynchronous, and the
+    status will transition from `Pending` to `Completed`.
 
-    To reduce response size and improve performance, prefer using
-    `filter_spec` to select only the fields you need.
+    To reduce response size and improve performance, it is recommended
+    to use `filter_spec` to select only the required fields from the
+    response.
+
+    Args:
+        request_id: The request ID returned by the cache invalidation
+            (purge) operation.
+        filter_spec: Optional glom-style filter specification to reduce
+            the response payload.
+            Example: `.status`
+
+    Returns:
+        An object containing:
+            - status: The current status of the purge request
+              (`Pending` or `Completed`).
     """
     return await get_cache_invalidation(
         request_id=request_id,
