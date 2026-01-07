@@ -9,6 +9,7 @@ from typing import Any, Optional, List
 
 
 from src.config import OPENAI_CLIENT
+from imagekitio.lib.helper import SUPPORTED_TRANSFORMS
 
 logger = logging.getLogger()
 
@@ -189,3 +190,12 @@ def detect_sources(query: str) -> List[str]:
     if any(re.search(pattern, query_lower) for pattern in API_REFERENCE_KEYWORDS):
         sources.append(ImagekitInformationSource.ImagekitAPIReferences.value)
     return sources
+
+
+SUPPORTED_TRANSFORMS_REV_MAP = {v: k for k, v in SUPPORTED_TRANSFORMS.items()}
+
+
+def get_transform_key(transform_name: str) -> Optional[str]:
+    if not transform_name:
+        return transform_name
+    return SUPPORTED_TRANSFORMS_REV_MAP.get(transform_name)

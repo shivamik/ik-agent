@@ -10,7 +10,8 @@ from src.tools import tools  # Import the tools list from src.tools
 from src.prompts import AGENT_SYSTEM_PROMPT
 
 # Configure the root strands logger
-logging.getLogger("strands").setLevel(logging.DEBUG)
+# logging.getLogger("strands").setLevel(logging.DEBUG)
+logging.getLogger("strands").setLevel(logging.INFO)
 
 # Add a handler to see the logs
 logging.basicConfig(
@@ -53,4 +54,3 @@ if __name__ == "__main__":
     parser.add_argument("payload", type=str)
     args = parser.parse_args()
     response = strands_agent_open_ai(json.loads(args.payload))
-    print(response)
