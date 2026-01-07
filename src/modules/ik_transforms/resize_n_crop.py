@@ -180,7 +180,7 @@ class ResizeAndCropTransforms:
         "bottom_left",
         "bottom_right",
     }  # relative crop anchor
-    _SPECIAL_FO = {"fo-custom"}  # custom focus region
+    _SPECIAL_FO = {"custom"}  # custom focus region
     _INTELLIGENT_FO = {"auto", "face"}  # plus COCO_CLASSES
 
     def resize_and_crop(
@@ -236,10 +236,10 @@ class ResizeAndCropTransforms:
                 auto, face, or any COCO class
             - With crop_mode in {'extract','pad_extract'}:
                 center/top/left/bottom/right/top_left/top_right/bottom_left/bottom_right
-                fo-custom
+                custom
                 auto, face, or any COCO class
             - With crop='maintain_ratio':
-                fo-custom
+                custom
                 auto, face, or any COCO class
 
             Forbidden:
@@ -406,7 +406,7 @@ class ResizeAndCropTransforms:
 
         - Allowed values depend on usage:
             * With pad_resize: left/right/top/bottom control padding position.
-            * With maintain_ratio & extract: fo-custom defines a specific focus area.
+            * With maintain_ratio & extract: custom defines a specific focus area.
             * With extract: center/top/left/bottom/right/top_left/... define relative cropping anchor.
             * Additionally: intelligent focus values: auto, face, and COCO classes.
         """
@@ -434,7 +434,7 @@ class ResizeAndCropTransforms:
                 crop == "maintain_ratio" or crop_mode in {"extract", "pad_extract"}
             ):
                 raise ValueError(
-                    "fo-custom is only valid with crop='maintain_ratio' or extract crop modes"
+                    "custom is only valid with crop='maintain_ratio' or extract crop modes"
                 )
             return
 
