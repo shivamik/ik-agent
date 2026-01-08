@@ -6,7 +6,19 @@ from openai import AsyncOpenAI
 from pathlib import Path
 
 
-logger = logging.getLogger()
+def configure_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s | %(name)s | %(message)s",
+        handlers=[logging.StreamHandler()],
+    )
+
+    # Control external libraries
+    logging.getLogger("strands").setLevel(logging.INFO)
+
+
+configure_logging()
+logger = logging.getLogger("src.config")
 
 
 TYPESENSE_CONVERSATION_BOT_PROMPT = """
@@ -95,3 +107,9 @@ TYPESENSE_CLIENT = _get_typesense_client()
 
 
 TEMP_DIR = Path("temp")
+
+
+IK_TRANSFORMS_CSV_PATH = Path("static/ik_transforms.csv")
+IK_TRANSFORMS_METHOD_CAPABILITIES_PATH = Path(
+    "static/transforms_method_capabilities.yaml"
+)

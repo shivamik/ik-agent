@@ -81,6 +81,7 @@ from .general.get_dates import get_dates_tool
 
 # search docs
 from .search.search_docs import search_docs_tool
+from .transformations.transformations_builder import transformation_builder_tool
 
 tools = [
     # Origins tools
@@ -143,4 +144,5 @@ tools = [
     # get_dates_tool,
     # # search docs tool
     # search_docs_tool,
+    transformation_builder_tool,
 ]

@@ -4,19 +4,13 @@ import argparse
 from strands import Agent
 from dotenv import load_dotenv
 from strands.models.openai import OpenAIModel
-import logging
 
 from src.tools import tools  # Import the tools list from src.tools
 from src.prompts import AGENT_SYSTEM_PROMPT
+from src.config import logger
 
 # Configure the root strands logger
 # logging.getLogger("strands").setLevel(logging.DEBUG)
-logging.getLogger("strands").setLevel(logging.INFO)
-
-# Add a handler to see the logs
-logging.basicConfig(
-    format="%(levelname)s | %(name)s | %(message)s", handlers=[logging.StreamHandler()]
-)
 
 load_dotenv()
 

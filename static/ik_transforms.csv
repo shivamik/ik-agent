@@ -1,4 +1,4 @@
-parameter_name,ik_key,value_type,allowed_values,constraints,tags,used_in,description,example_usage
+parameter_name,ik_key,value_type,allowed_values,constraints,tags,used_in,description,example_usage,method_name
 width,width,"number, arithmetic_expression, """"""auto""""""",integer > 1 (px) OR 0 < w < 1 (percentage) OR arithmetic expression,Auto width from Client Hint Sec-CH-Width.,"resize, crop",image,"Output width. If only w is provided, height auto-scales to preserve aspect ratio.","### Example 1
 
 **Integer value**
@@ -31,7 +31,7 @@ tx = resize_and_crop(
 tx = resize_and_crop(
     width=""ih_div_2""
 )
-```"
+```",resize_and_crop
 height,height,"number, arithmetic_expression, """"""auto""""""",integer > 1 (px) OR 0 < w < 1 (percentage) OR arithmetic expression,,resize,image,"Output height. If only h is provided, width auto-scales to preserve aspect ratio.","### Example 1
 
 **Integer value**
@@ -64,7 +64,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 tx = ResizeAndCropTransforms().resize_and_crop(
     height=""iw_div_2""
 )
-```"
+```",resize_and_crop
 Aspect Ratio,aspect_ratio,"<w>-<h>, arithmetic_expression","width-height, arithmetic expression",Must be used with either w or h. Ignored if both w and h are provided.,resize,image,Aspect ratio (width:height).,"### Example 1
 
 **width = 400, height = 300, aspect ratio = 4:3**
@@ -87,7 +87,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     aspect_ratio=""iar_mul_2"",
     width=400
 )
-```"
+```",resize_and_crop
 Crop Mode,crop_mode,enum,pad_resize | pad_extract | extract,"pad_resize
 
 * Requires **both `w` and `h`** to be meaningful.
@@ -366,7 +366,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     focus=""car"",
     zoom=1.2
 )
-```"
+```",resize_and_crop
 Crop,crop,enum,force | at_max_enlarge | at_least | maintain_ratio,"## force (`force`)
 
 * Requires **both `w` and `h`**
@@ -560,7 +560,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     crop=""maintain_ratio"",
     focus=""custom""
 )
-```"
+```",resize_and_crop
 Focus Custom,focus,"""""""custom""""""","""custom""","* Requires a **custom focus area to be defined beforehand** (upload or media library).
 * Has **no effect** if no custom focus is stored for the image.
 * Works **only with cropping strategies**, not plain resizing.
@@ -604,7 +604,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     crop_mode=""extract"",
     focus=""custom""
 )
-```"
+```",resize_and_crop
 Focus Auto - Smart Crop,focus,"""""""auto""""""","""auto""","* Requires **both `w` and `h`**
 * Works only with crop strategies that support cropping:
 
@@ -631,7 +631,7 @@ Focus Auto - Smart Crop,focus,"""""""auto""""""","""auto""","* Requires **both `
   ""height"": 300,
   ""focus"": ""auto""
 }
-```"
+```",resize_and_crop
 Focus Face - Smart Crop,focus,"""""""face""""""","""face""","
 * Requires **both `w` and `h`**
 * Works only with crop strategies that perform cropping:
@@ -711,7 +711,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     zoom=0.5
 )
 ```
-"
+",resize_and_crop
 Focus Objects - Smart Crop,focus,"""""""object""""""","""object"" | ""<object1>_<object2>""","
 * Object name must be from the **supported COCO object list**
 * Detection is heuristic and may fail for some images
@@ -835,7 +835,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
     aspect_ratio=""2-1"",
     zoom=0.6
 )
-```"
+```",resize_and_crop
 Zoom,zoom,number,"0-1, >1
 ","* Works **only with focus-based cropping**
 
@@ -1074,7 +1074,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 )
 ```
 
----"
+---",resize_and_crop
 x position of cm_extract,"x, y, x_center, y_center",number,number,"## x
 
 * Works **only with `cm-extract`**
@@ -1189,7 +1189,7 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 )
 ```
 
----"
+---",resize_and_crop
 dpr,dpr,number,number,"* Can be used **only when `w` or `h` is specified**
 * Valid range: **`0.1` to `5`**
 * If calculated output width or height:
@@ -1265,4 +1265,4 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 )
 ```
 
----"
+---",resize_and_crop

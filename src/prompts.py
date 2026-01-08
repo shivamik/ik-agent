@@ -17,3 +17,114 @@ AGENT_SYSTEM_PROMPT = """
     3. Answer ONLY from tool output.
     4. Be concise.
 """
+
+
+"""
+--------
+    ImageKit Transformation Builder Prompts
+    used in src/modules/ik_transforms/transformation_builder.py
+--------
+"""
+
+# ? prompt for classification of methods to be used
+TRANSFORMATION_BUILDER_METHOD_CLASSIFIER_PROMPT_TEMPLATE = """
+You are a strict classifier.
+
+Your task:
+Given a user query, identify:
+1. Which ImageKit transformation METHODS are required
+2. You are given a list of valid methods and capabilities of that method.
+
+Rules:
+- Choose ONLY from the provided lists
+- Do NOT invent methods
+- Do NOT generate ImageKit keys
+- If the query cannot be fullfilled by method and its capabilities. Then
+    unresolved_intent should describe what is missing.
+    Frame unresolved_intent as a search query to find more information about the missing parts.
+    Leave empty if everything is covered by the methods.
+
+Valid methods and their capabilities:
+
+---
+{methods_json}
+---
+
+Output STRICT JSON only.
+
+Format:
+{{
+  "methods": ["method_name"],
+  "unresolved_intent": "....",
+}}
+
+User query:
+{user_query}
+""".strip()
+
+# ? prompt for building transformation parameter to be built
+TRANSFORMATION_BUILDER_PARAMS_BUILDER_PROMPT_TEMPLATE = """
+You are an ImageKit transformation generator.
+
+You are given:
+1. A user query
+2. A detailed list of imagekit methods and their parameters.
+3. Your task is to generate a structured plan of methods and parameters to fulfill the user query.
+
+Rules:
+- Use ONLY provided parameters
+- Do NOT invent parameters or methods
+- Do NOT include unused fields
+- Output valid JSON ONLY
+
+Schema:
+[
+  {{
+    "method": "<method>",
+    "params": {{ "<param>": <value> }}
+  }}
+]
+
+If not possible, return [].
+
+User query:
+{user_query}
+
+Allowed parameters:
+{metadata}
+""".strip()
+
+# ? prompt for searching the docs for params
+TRANSFORMATION_BUILDER_IK_DOC_PARAM_EXTRACTION_PROMPT = """
+You are imagekit docs expert. You can read docs and output
+transformation parameters with correct values.
+
+Extract ONLY transformation parameters explicitly supported
+by the documentation that are relevant to the query. User does not
+want all the parameters, only the relevant ones with no placeholders but actual values.
+
+A transformation and parameter follows this schema:
+transformation: `param-value_value1_value2`
+
+this is represented in JSON as:
+{{ "transformation": {{ "param": "value_value1_value2" }} }}
+
+Rules:
+- Do NOT invent parameters
+- Do NOT invent defaults
+- Do not use placeholder values
+- Do not invent placeholder values. 
+- Respect limitations
+- Only include parameters relevant to the user query.
+- Add relavant values for the parameters
+- If you cannot add specific values, ignore that parameter.
+
+Output JSON ONLY:
+{{ "params": {{ "<param>": "<value>" }} }}
+
+User query:
+{user_query}
+
+Documentation:
+{doc_context}
+""".strip()

@@ -196,6 +196,6 @@ SUPPORTED_TRANSFORMS_REV_MAP = {v: k for k, v in SUPPORTED_TRANSFORMS.items()}
 
 
 def get_transform_key(transform_name: str) -> Optional[str]:
-    if not transform_name:
+    if not transform_name or (transform_name not in SUPPORTED_TRANSFORMS_REV_MAP):
         return transform_name
     return SUPPORTED_TRANSFORMS_REV_MAP.get(transform_name)

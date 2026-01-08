@@ -61,11 +61,27 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Union, Literal
-from src.utils.utils import get_transform_key
-
+from typing import Dict, Optional, Union, Literal, TypedDict
+from src.utils.utils import get_transform_key, Any
+from ..transformation_builder import logger
 
 NumberOrExpression = Union[int, float, str]
+
+
+class ResizeAndCropParams(TypedDict, total=False):
+    width: NumberOrExpression
+    height: NumberOrExpression
+    aspect_ratio: str
+    crop: Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
+    crop_mode: Literal["pad_resize", "pad_extract", "extract"]
+    focus: str
+    zoom: NumberOrExpression
+    x: NumberOrExpression
+    y: NumberOrExpression
+    x_center: NumberOrExpression
+    y_center: NumberOrExpression
+    dpr: NumberOrExpression
+    background: str
 
 
 class ResizeAndCropTransforms:
@@ -185,6 +201,24 @@ class ResizeAndCropTransforms:
 
     def resize_and_crop(
         self,
+        **params: Any,
+    ) -> Dict[str, str]:
+        known: ResizeAndCropParams = {}
+        extra: Dict[str, Any] = {}
+
+        for k, v in params.items():
+            if k in ResizeAndCropParams.__annotations__:
+                known[k] = v
+            else:
+                extra[k] = v
+
+        if extra:
+            logger.debug("Ignoring unsupported params: %s", extra)
+
+        return self._resize_and_crop_impl(**known)
+
+    def _resize_and_crop_impl(
+        self,
         *,
         width: Optional[NumberOrExpression] = None,
         height: Optional[NumberOrExpression] = None,
@@ -200,6 +234,8 @@ class ResizeAndCropTransforms:
         x_center: Optional[NumberOrExpression] = None,
         y_center: Optional[NumberOrExpression] = None,
         dpr: Optional[NumberOrExpression] = None,
+        background: Optional[str] = None,
+        **kwargs,
     ) -> Dict[str, str]:
         """
         Validate and normalize ImageKit resize & crop parameters.
@@ -226,6 +262,9 @@ class ResizeAndCropTransforms:
         crop_mode : {"pad_resize","pad_extract","extract"}, optional
             Crop mode controlling padding/extraction.
             - Coordinates (x,y,x_center,y_center) are ONLY allowed with crop_mode in {"extract","pad_extract"}.
+
+        background: str, optional
+            Background color for padding (hex without #, e.g. "FFFFFF" for white).
 
         focus : str, optional
             Focus parameter `fo` with context-sensitive values:
@@ -313,6 +352,10 @@ class ResizeAndCropTransforms:
         if zoom is not None:
             self._validate_positive("zoom", zoom)
             transforms[get_transform_key("z")] = str(zoom)
+
+        if background is not None:
+            background = background.replace("#", "")
+            transforms["background"] = str(background)
 
         # --- Positioning offsets (only for extract/pad_extract) ---
         if any(v is not None for v in (x, y, x_center, y_center)):

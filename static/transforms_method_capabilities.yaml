@@ -1,0 +1,26 @@
+resize_and_crop:
+  capability:
+    - resize by width
+    - resize by height
+    - responsive resize auto dimension
+    - arithmetic expression based resize
+    - aspect ratio based resize
+    - aspect ratio enforced crop
+    - crop force resize
+    - crop at least resize
+    - crop at max enlarge resize
+    - crop maintain ratio resize
+    - extract crop
+    - padded extract crop
+    - padded resize
+    - add padding while resizing an image to specific dimensions
+    - intelligent focus auto
+    - intelligent focus face detection
+    - intelligent focus object detection
+    - positional focus padding control
+    - positional focus relative crop
+    - custom focus region
+    - zoom based cropping
+    - absolute coordinate crop
+    - center based coordinate crop
+    - device pixel ratio scaling
