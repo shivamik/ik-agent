@@ -367,8 +367,6 @@ def build_final_transformations(
             len(structured_plan),
             bool(doc_params),
         )
-        base_transform: Dict[str, Any] = {}
-        overlay_transforms: List[Dict[str, Any]] = []
 
         for step in structured_plan:
             method = step.get("method", "")
@@ -379,28 +377,18 @@ def build_final_transformations(
                 logger.debug("Skipping step with no params for method=%s", method)
                 continue
 
-            # Overlay steps remain isolated
-            if "overlay" in method:
-                overlay_transforms.append({k: v for k, v in params.items()})
-            else:
-                # Merge base (non-overlay) params
-                for k, v in params.items():
-                    base_transform[k] = v
+            final_transforms.append(params)
 
         # Apply doc params ONLY if not already set
         if doc_params and doc_params.get("params"):
-            logger.debug(
-                "Merging %d doc param(s) onto base transform", len(doc_params["params"])
-            )
-            for short_key, value in doc_params["params"].items():
-                long_key = get_transform_key(short_key)
-                if long_key not in base_transform and value:
-                    base_transform[long_key] = value
-
-        if base_transform:
-            final_transforms.append(base_transform)
-
-        final_transforms.extend(overlay_transforms)
+            logger.debug("There are doc params of len: ", len(doc_params["params"]))
+            fallback_transform: Dict[str, Any] = {}
+            for long_key, value in doc_params["params"].items():
+                if value:
+                    fallback_transform[get_transform_key(long_key)] = value
+            if fallback_transform:
+                # Overlay doc params as a new step
+                final_transforms.append(fallback_transform)
 
     # ------------------------------------------------------------------
     # CASE 2: No structured plan → docs-only fallback
