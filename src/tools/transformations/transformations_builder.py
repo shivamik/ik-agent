@@ -14,13 +14,15 @@ METADATA: Dict[str, Any] = {
     "operation_id": "transformation-builder",
 }
 
+DEFAULT_IMAGEKIT_SRC = "https://ik.imagekit.io/your_imagekit_id/default-image.jpg"
+
 
 @tool(
     name="transformation-builder",
 )
 async def transformation_builder_tool(
     query: str,
-    src: Optional[str] = "https://ik.imagekit.io/your_imagekit_id/default-image.jpg",
+    src: Optional[str] = DEFAULT_IMAGEKIT_SRC,
 ) -> str:
     """
     Build an ImageKit transformation URL from a natural-language image manipulation query.
@@ -78,6 +80,9 @@ async def transformation_builder_tool(
     """
     transformation = await resolve_imagekit_transform(query)
     src = src.split("?")[0]
+    # ! TODO: Add validation for src
+    # ! TODO: Add validation for case when using ai transform for image generation
+
     url = await CLIENT.helper.build_url(
         src=src,
         transformation=transformation,

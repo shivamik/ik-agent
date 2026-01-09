@@ -1,7 +1,8 @@
 import os
-import json
 import re
 import math
+import json
+import base64
 import logging
 from enum import Enum
 from glom import glom
@@ -193,9 +194,20 @@ def detect_sources(query: str) -> List[str]:
 
 
 SUPPORTED_TRANSFORMS_REV_MAP = {v: k for k, v in SUPPORTED_TRANSFORMS.items()}
+# add custom mappings
+SUPPORTED_TRANSFORMS_REV_MAP["ai_bg_genfill"] = "e-bg_genfill"
+SUPPORTED_TRANSFORMS["e-bg_genfill"] = "ai_bg_genfill"
+
+SUPPORTED_TRANSFORMS_REV_MAP["ai_gen_image"] = "ik-genimg"
+SUPPORTED_TRANSFORMS["ik-genimg"] = "ai_gen_image"
 
 
 def get_transform_key(transform_name: str) -> Optional[str]:
     if not transform_name or (transform_name not in SUPPORTED_TRANSFORMS_REV_MAP):
         return transform_name
     return SUPPORTED_TRANSFORMS_REV_MAP.get(transform_name)
+
+
+def to_base64(text: str) -> str:
+    """Helper to base64-encode a string."""
+    return base64.urlsafe_b64encode(text.encode()).decode()

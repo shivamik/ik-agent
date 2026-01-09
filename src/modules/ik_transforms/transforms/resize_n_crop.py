@@ -59,11 +59,13 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 ```
 """
 
-from __future__ import annotations
+import logging
 
 from typing import Dict, Optional, Union, Literal, TypedDict
 from src.utils.utils import get_transform_key, Any
-from ..transformation_builder import logger
+
+logger = logging.getLogger("transforms.resize_and_crop")
+logger.setLevel(logging.DEBUG)
 
 NumberOrExpression = Union[int, float, str]
 
