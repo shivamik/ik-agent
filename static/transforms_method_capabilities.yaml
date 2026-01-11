@@ -24,3 +24,48 @@ resize_and_crop:
     - absolute coordinate crop
     - center based coordinate crop
     - device pixel ratio scaling
+
+ai_transform:
+  capability:
+    # Background & foreground manipulation
+    - remove background using AI (external provider) Removedotbg, remove dot, bg remove.bg
+    - remove background using ImageKit native AI
+    - change image background using text prompt
+    - reposition foreground subject while changing background
+    - preserve subject while replacing background context
+
+    # Image editing & modification
+    - edit image content using natural language prompt
+    - modify image appearance using base64 encoded prompt
+    - object-aware image editing
+    - context-aware image modification
+
+    # Generative image expansion
+    - generative fill beyond original image boundaries
+    - AI-based outpainting with size-controlled canvas
+    - prompt-driven generative fill
+    - resize-aware generative background extension
+    - crop-mode dependent generative fill
+
+    # Visual effects
+    - generate AI-based drop shadow around subject
+    - control light direction for drop shadow
+    - control elevation of light source
+    - control shadow intensity
+    - apply drop shadow to transparent images only
+
+    # Image enhancement
+    - retouch image to improve visual quality
+    - remove blemishes and visual artifacts using AI
+    - upscale low resolution images using AI
+    - super-resolution upscaling to fixed maximum resolution
+
+    # Image generation
+    - generate new image variations from existing image
+    - controlled variation generation while preserving structure
+    - regenerate image by cache-busting or path change
+
+    # Encoding & prompt handling
+    - plain text prompt support
+    - base64 encoded prompt support
+    - safe handling of special characters in prompts

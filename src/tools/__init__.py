@@ -82,6 +82,7 @@ from .general.get_dates import get_dates_tool
 # search docs
 from .search.search_docs import search_docs_tool
 from .transformations.transformations_builder import transformation_builder_tool
+from .ai_tools.generate_image import imagekit_generate_image
 
 tools = [
     # Origins tools
@@ -145,4 +146,5 @@ tools = [
     # # search docs tool
     # search_docs_tool,
     transformation_builder_tool,
+    imagekit_generate_image,
 ]

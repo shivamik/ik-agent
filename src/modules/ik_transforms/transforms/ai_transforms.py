@@ -22,7 +22,6 @@ class AITransformParams(TypedDict, total=False):
     ai_drop_shadow: bool
     ai_retouch: bool
     ai_upscale: bool
-    ai_image_generation: bool
 
     az: Optional[int]
     el: Optional[int]
@@ -33,8 +32,6 @@ class AITransformParams(TypedDict, total=False):
     height: int
     width: int
     crop_mode: Literal["pad_resize", "pad_extract"]
-
-    ai_image_path: Optional[str]
 
 
 # ------------------------------------------------------------------
@@ -84,7 +81,6 @@ class AITransforms:
         ai_drop_shadow: bool = False,
         ai_retouch: bool = False,
         ai_upscale: bool = False,
-        ai_image_generation: bool = False,
         az: Optional[int] = 215,
         el: Optional[int] = 45,
         st: Optional[int] = 60,
@@ -93,7 +89,6 @@ class AITransforms:
         height: Optional[int] = None,
         width: Optional[int] = None,
         crop_mode: Literal["pad_resize", "pad_extract"] = "pad_resize",
-        ai_image_path: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Validate and normalize ImageKit AI transformation parameters.
@@ -178,18 +173,6 @@ class AITransforms:
             Increases image resolution using AI.
             Normalized as: `e-upscale`.
 
-        Generation
-        ~~~~~~~~~~
-        ai_image_generation : bool
-            Generates a new image from a text prompt.
-            This is a **path-based transformation**, not a query-based one.
-            Requires:
-            - `prompt`
-            - `ai_image_path`
-            Normalized as:
-            - `ik-genimg-prompt`
-            - `ik-genimg-path`
-
         Common parameters
         -----------------
         prompt : str, optional
@@ -230,6 +213,18 @@ class AITransforms:
         """
 
         transforms: List[Dict[str, Any]] = []
+
+        # -------------------------------------------------
+        # Retouch
+        # -------------------------------------------------
+        if ai_retouch:
+            transforms.append({"e-retouch": True})
+
+        # -------------------------------------------------
+        # Upscale
+        # -------------------------------------------------
+        if ai_upscale:
+            transforms.append({"e-upscale": True})
 
         # -------------------------------------------------
         # Background removal (external)
@@ -313,33 +308,5 @@ class AITransforms:
                 shadow["st"] = st
 
             transforms.append(shadow)
-
-        # -------------------------------------------------
-        # Retouch
-        # -------------------------------------------------
-        if ai_retouch:
-            transforms.append({"e-retouch": True})
-
-        # -------------------------------------------------
-        # Upscale
-        # -------------------------------------------------
-        if ai_upscale:
-            transforms.append({"e-upscale": True})
-
-        # -------------------------------------------------
-        # Image generation (path-based)
-        # -------------------------------------------------
-        if ai_image_generation:
-            if not ai_image_path:
-                raise ValueError("ai_image_path is required for ai_image_generation")
-            if not prompt:
-                raise ValueError("prompt is required for ai_image_generation")
-
-            transforms.append(
-                {
-                    "ik-genimg-prompt": (to_base64(prompt) if not encoded else prompt),
-                    "ik-genimg-path": ai_image_path,
-                }
-            )
 
         return transforms

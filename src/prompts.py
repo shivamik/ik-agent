@@ -44,6 +44,10 @@ Rules:
     Frame unresolved_intent as a search query to find more information about the missing parts.
     Leave empty if everything is covered by the methods.
 
+- Note: Whenever user asks upscaling, by default is ai upscale not resizing.
+  Also if user asks for background removal, use e-bgremove method by default.
+  Any background removal must be done after any upscale or retouch operation.
+  
 Valid methods and their capabilities:
 
 ---

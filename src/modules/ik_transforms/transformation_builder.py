@@ -43,6 +43,7 @@ from src.prompts import (
     TRANSFORMATION_BUILDER_IK_DOC_PARAM_EXTRACTION_PROMPT,
 )
 from .transforms.resize_n_crop import ResizeAndCropTransforms
+from .transforms.ai_transforms import AITransforms
 
 with open(IK_TRANSFORMS_METHOD_CAPABILITIES_PATH, "r") as f:
     method_n_capabilities = yaml.safe_load(f)
@@ -59,6 +60,7 @@ VALID_METHODS: List[str] = list(method_n_capabilities.keys())
 
 VALID_METHODS_DOCS_STRINGS = {
     "resize_n_crop": ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
+    "ai_transforms": AITransforms._ai_transform_impl.__doc__,
 }
 
 # ---------------------------------------------------------------------
@@ -311,6 +313,8 @@ def parse_params(
     """Parse and normalize parameters based on method capabilities."""
     if method == "resize_and_crop":
         return ResizeAndCropTransforms().resize_and_crop(**params)
+    if method == "ai_transforms":
+        return AITransforms().ai_transforms(**params)
     return params
 
 
