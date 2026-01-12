@@ -6,6 +6,13 @@ from openai import AsyncOpenAI
 from pathlib import Path
 from enum import Enum
 
+LOG_LEVEL = os.getenv("log_level", "INFO").upper()
+if LOG_LEVEL == "INFO":
+    LOG_LEVEL = logging.INFO
+elif LOG_LEVEL == "DEBUG":
+    LOG_LEVEL = logging.DEBUG
+else:
+    LOG_LEVEL = logging.INFO
 
 logger = logging.getLogger("src.config")
 

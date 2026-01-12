@@ -9,11 +9,11 @@ import glom
 from typing import Any, Optional, List
 
 
-from src.config import OPENAI_CLIENT
+from src.config import OPENAI_CLIENT, LOG_LEVEL
 from imagekitio.lib.helper import SUPPORTED_TRANSFORMS
 
 logger = logging.getLogger("utils.utils")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 
 def maybe_filter(spec: Optional[Any], response: Any) -> Any:

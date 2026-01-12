@@ -63,9 +63,10 @@ import logging
 
 from typing import Dict, Optional, Union, Literal, TypedDict
 from src.utils.utils import get_transform_key, Any
+from src.config import LOG_LEVEL
 
 logger = logging.getLogger("transforms.resize_and_crop")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 NumberOrExpression = Union[int, float, str]
 

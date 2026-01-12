@@ -9,13 +9,13 @@ from pydantic import BaseModel, Field, model_validator
 from strands import tool
 
 
-from src.config import TEMP_DIR
+from src.config import TEMP_DIR, LOG_LEVEL
 from src.clients import CLIENT
 from src.utils.file_utils import resolve_image_input
 from src.utils.utils import maybe_filter
 
 logger = logging.getLogger("tools.files.upload_files")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 
 class PostTransformationTransform(BaseModel):

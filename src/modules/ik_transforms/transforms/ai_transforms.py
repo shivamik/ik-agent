@@ -2,9 +2,10 @@ import logging
 from typing import Dict, List, Optional, Literal, TypedDict, Any
 
 from src.utils.utils import to_base64
+from src.config import LOG_LEVEL
 
 logger = logging.getLogger("transforms.ai_transforms")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 
 # ------------------------------------------------------------------

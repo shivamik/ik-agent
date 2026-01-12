@@ -9,6 +9,7 @@ from PIL import Image
 from strands import tool
 
 from src.clients import CLIENT
+from src.config import LOG_LEVEL
 from src.modules.ik_transforms.transformation_builder import resolve_imagekit_transform
 
 METADATA: Dict[str, Any] = {
@@ -24,7 +25,7 @@ DEFAULT_IMAGEKIT_SRC = "https://ik.imagekit.io/your_imagekit_id/default-image.jp
 MAX_MP = 16  # Explicitly specified in ImageKit docs
 
 logger = logging.getLogger("tools.transformation_builder")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 
 def handle_retouch_and_upscale(
