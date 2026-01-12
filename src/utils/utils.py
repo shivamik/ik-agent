@@ -5,19 +5,34 @@ import json
 import base64
 import logging
 from enum import Enum
-from glom import glom
+import glom
 from typing import Any, Optional, List
 
 
 from src.config import OPENAI_CLIENT
 from imagekitio.lib.helper import SUPPORTED_TRANSFORMS
 
-logger = logging.getLogger()
+logger = logging.getLogger("utils.utils")
+logger.setLevel(logging.DEBUG)
 
 
 def maybe_filter(spec: Optional[Any], response: Any) -> Any:
-    if spec:
-        return glom(response, spec)
+    try:
+        if spec:
+            return glom.glom(response, spec)
+    except glom.core.PathAccessError as e:
+        logger.info(
+            (
+                "There was some problem accessing the response fields you requested. ",
+                f"Requested {spec}",
+                f"Got response: {response}",
+            )
+        )
+        return {
+            "status": "success",
+            "message": "We successfully processed your request, but filtering spec was not properly formed. Returning full response.",
+            "response": response,
+        }
     return response
 
 

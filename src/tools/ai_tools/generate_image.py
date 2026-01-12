@@ -1,11 +1,12 @@
+import logging
+import httpx
 from typing import Any, Dict, List, Optional
 from strands import tool
 from urllib.parse import urlparse, quote
 
-from src.clients import CLIENT
-from src.utils.utils import maybe_filter
 from src.tools.assets.list_assets import list_assets
 
+logger = logging.getLogger("tools.generate_image")
 
 METADATA: Dict[str, Any] = {
     "resource": "generate_image",
@@ -15,6 +16,75 @@ METADATA: Dict[str, Any] = {
     "http_path": "/local/ik-genimg",
     "operation_id": "ik-genimg",
 }
+
+
+async def _probe_imagekit_url(
+    url: str,
+    *,
+    timeout_seconds: int = 10,
+) -> None:
+    """
+    Fire-and-forget probe to trigger ImageKit generation.
+
+    Behavior:
+    - 404 → error
+    - 200 + is-intermediate-response:true → OK (still processing)
+    - 200 normal → ready
+    """
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/135.0.0.0 Safari/537.36"
+        )
+    }
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        try:
+            resp = await client.get(
+                url,
+                timeout=timeout_seconds,
+                headers=headers,
+            )
+
+            # 404 means ImageKit rejected the request
+            if resp.status_code == 404:
+                logger.error("ImageKit generation failed (404): %s", url)
+                raise RuntimeError("Generated image URL returned 404")
+
+            # ImageKit intermediate response
+            if resp.headers.get("is-intermediate-response") == "true":
+                logger.info(
+                    "ImageKit generation in progress (intermediate): %s",
+                    url,
+                )
+                return
+
+            # Successful & ready
+            if resp.status_code == 200:
+                logger.info("ImageKit image ready: %s", url)
+                return
+
+            # Any other unexpected status
+            logger.warning(
+                "Unexpected ImageKit response %s for %s",
+                resp.status_code,
+                url,
+            )
+
+        except httpx.TimeoutException:
+            # Timeout is OK — generation continues server-side
+            logger.info(
+                "ImageKit generation still in progress (timeout): %s",
+                url,
+            )
+
+
+async def trigger_imagekit_generation(url: str) -> None:
+    """
+    Schedule ImageKit generation probe without blocking.
+    """
+    return await _probe_imagekit_url(url)
 
 
 @tool(
@@ -38,7 +108,10 @@ async def imagekit_generate_image(
         Text prompt describing the image to generate. Required.
 
     image_path : str, optional
-        Output path for the generated image.
+        Output path for the generated image. This does not upload the image
+        imagekit dam, its just the path appended to the ik-genimg URL
+        for accessing the generated image. For saving the image to the DAM,
+        you need to use upload tools separately.
         Example: 'gen-images/burger.jpg'
         If omitted, only the ik-genimg prompt path is returned.
 
@@ -79,10 +152,12 @@ async def imagekit_generate_image(
     encoded_prompt = quote(prompt, safe="")
 
     base = f"{parsed.scheme}://{parsed.netloc}/{account_id}/"
-    genimg_base = f"{base}ik-genimg-prompt-{encoded_prompt}"
+    gen_image = f"{base}ik-genimg-prompt-{encoded_prompt}"
 
     if image_path:
         image_path = image_path.lstrip("/")
-        return f"{genimg_base}/{image_path}"
+        gen_image = f"{gen_image}/{image_path}"
 
-    return genimg_base
+    # ================ trigger generation =================
+    await trigger_imagekit_generation(gen_image)
+    return gen_image

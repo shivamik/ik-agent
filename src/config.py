@@ -4,20 +4,9 @@ import typesense
 from typesense import Client
 from openai import AsyncOpenAI
 from pathlib import Path
+from enum import Enum
 
 
-def configure_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(levelname)s | %(name)s | %(message)s",
-        handlers=[logging.StreamHandler()],
-    )
-
-    # Control external libraries
-    logging.getLogger("strands").setLevel(logging.INFO)
-
-
-configure_logging()
 logger = logging.getLogger("src.config")
 
 
@@ -113,3 +102,8 @@ IK_TRANSFORMS_CSV_PATH = Path("static/ik_transforms.csv")
 IK_TRANSFORMS_METHOD_CAPABILITIES_PATH = Path(
     "static/transforms_method_capabilities.yaml"
 )
+
+
+class IK_Transforms(Enum):
+    RESIZE_AND_CROP = "resize_and_crop"
+    AI_TRANSFORM = "ai_transform"

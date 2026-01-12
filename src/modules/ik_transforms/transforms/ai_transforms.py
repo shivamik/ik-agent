@@ -10,7 +10,6 @@ logger.setLevel(logging.DEBUG)
 # ------------------------------------------------------------------
 # Typed params (mirror of ResizeAndCropParams pattern)
 # ------------------------------------------------------------------
-print(logger)
 
 
 class AITransformParams(TypedDict, total=False):

@@ -1,16 +1,30 @@
 import os
 import json
 import argparse
+import logging
 from strands import Agent
 from dotenv import load_dotenv
 from strands.models.openai import OpenAIModel
 
 from src.tools import tools  # Import the tools list from src.tools
 from src.prompts import AGENT_SYSTEM_PROMPT
-from src.config import logger
 
-# Configure the root strands logger
-# logging.getLogger("strands").setLevel(logging.DEBUG)
+
+def configure_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s | %(name)s | %(message)s",
+        handlers=[logging.StreamHandler()],
+    )
+
+    # Control external libraries
+    logger = logging.getLogger("strands")
+    # logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
+    return logger
+
+
+configure_logging()
 
 load_dotenv()
 
@@ -21,10 +35,10 @@ model = OpenAIModel(
     },
     # **model_config
     model_id="gpt-5.1",
-    params={
-        "max_completion_tokens": 10000,
-        "temperature": 0.7,
-    },
+    # params={
+    #     "max_completion_tokens": 10000,
+    #     "temperature": 0.7,
+    # },
 )
 
 agent = Agent(

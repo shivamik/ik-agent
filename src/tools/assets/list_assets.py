@@ -1,8 +1,24 @@
 from typing import Any, Dict, List, Optional
 from strands import tool
+from urllib.parse import urlparse, unquote
 
 from src.clients import CLIENT
 from src.utils.utils import maybe_filter
+
+
+def _extract_filename_from_url(file_url: str) -> str:
+    """
+    Extract and decode filename from an ImageKit URL.
+    """
+    parsed = urlparse(file_url)
+    if not parsed.path:
+        raise ValueError("Invalid file_url: missing path")
+
+    filename = parsed.path.split("/")[-1]
+    if not filename:
+        raise ValueError("Invalid file_url: could not extract filename")
+
+    return unquote(filename)
 
 
 METADATA: Dict[str, Any] = {
@@ -76,7 +92,8 @@ async def list_assets(
 )
 async def list_assets_tool(
     file_type: Optional[str] = None,
-    limit: Optional[int] = None,
+    file_url: Optional[str] = None,
+    limit: Optional[int] = 10,
     path: Optional[str] = None,
     search_query: Optional[str] = None,
     skip: Optional[int] = None,
@@ -86,8 +103,11 @@ async def list_assets_tool(
 ) -> List[Dict[str, Any]]:
     """
     List and search assets in the ImageKit media library.
+    You can search for files using file_url from imagekit DAM
+    "https://ik.imagekit.io/your_imagekit_id/path/to/file.jpg".
 
-    This tool returns files, file versions, and folders from ImageKit.
+    This tool returns files, file_id, file versions, and folders from ImageKit.
+    And other file related details
     You can list all assets or narrow results using filters such as
     file type, asset type, folder path, sorting, pagination, or a
     Lucene-like search query.
@@ -102,6 +122,13 @@ async def list_assets_tool(
             - "all" — include all file types
             - "image" — include only image files
             - "non-image" — include only non-image files (e.g., video, JS, CSS)
+
+        file_url:
+            Public URL of a specific file to look up. Copied from imagekit DAM.
+            Example: "https://ik.imagekit.io/your_imagekit_id/path/to/file.jpg"
+
+            When `file_url` is provided, the tool will attempt to find
+            the exact file matching that URL.
 
         type:
             Filter results by asset type.
@@ -128,7 +155,7 @@ async def list_assets_tool(
             - "ASC_NAME", "DESC_CREATED", "ASC_SIZE", "DESC_RELEVANCE"
 
         limit:
-            Maximum number of results to return.
+            Maximum number of results to return. Defaults to 10.
 
         skip:
             Number of results to skip before returning results
@@ -147,13 +174,48 @@ async def list_assets_tool(
         A list of assets (files and  folders), optionally
         transformed using `filter_spec`.
     """
-    return await list_assets(
+    resolved_search_query = search_query
+
+    # ---- file_url handling ----
+    if file_url:
+        filename = _extract_filename_from_url(file_url)
+
+        # Build name-based search
+        file_url_query = f'name="{filename}"'
+
+        # Merge with existing search_query if present
+        if resolved_search_query:
+            resolved_search_query = f"({resolved_search_query}) AND {file_url_query}"
+        else:
+            resolved_search_query = file_url_query
+
+    # ---- Call underlying API ----
+    results = await list_assets(
         file_type=file_type,
         limit=limit,
         path=path,
-        search_query=search_query,
+        search_query=resolved_search_query,
         skip=skip,
         sort=sort,
         type=type,
         filter_spec=filter_spec,
     )
+
+    # ---- Post-filter for exact URL match ----
+    if file_url:
+        matched = [
+            asset
+            for asset in results
+            if isinstance(asset, dict)
+            and "url" in asset
+            and asset["url"].startswith(file_url.split("?")[0])
+        ]
+
+        if not matched:
+            raise ValueError(
+                f"Could not find file details for the provided file_url: {file_url}"
+            )
+
+        return matched
+
+    return results

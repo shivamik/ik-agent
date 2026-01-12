@@ -35,6 +35,7 @@ from src.config import (
     OPENAI_CLIENT,
     IK_TRANSFORMS_METHOD_CAPABILITIES_PATH,
     IK_TRANSFORMS_CSV_PATH,
+    IK_Transforms,
 )
 from src.utils.utils import ImagekitInformationSource, embed_query, get_transform_key
 from src.prompts import (
@@ -311,10 +312,10 @@ def parse_params(
     params: Dict[str, Any],
 ):
     """Parse and normalize parameters based on method capabilities."""
-    if method == "resize_and_crop":
+    if method == IK_Transforms.RESIZE_AND_CROP.value:
         return ResizeAndCropTransforms().resize_and_crop(**params)
-    if method == "ai_transforms":
-        return AITransforms().ai_transforms(**params)
+    if method == IK_Transforms.AI_TRANSFORM.value:
+        return AITransforms().ai_transform(**params)
     return params
 
 
@@ -381,8 +382,11 @@ def build_final_transformations(
                 logger.debug("Skipping step with no params for method=%s", method)
                 continue
 
-            final_transforms.append(params)
-
+            if isinstance(params, list):
+                for p in params:
+                    final_transforms.append(p)
+            else:
+                final_transforms.append(params)
         # Apply doc params ONLY if not already set
         if doc_params and doc_params.get("params"):
             logger.debug("There are doc params of len: ", len(doc_params["params"]))
@@ -439,7 +443,8 @@ async def resolve_imagekit_transform(
     logger.info("Classification result: %s", classification)
 
     classified_methods = classification.get("methods", [])
-    unresolved_intent = classification.get("unresolved_intent")
+    # unresolved_intent = classification.get("unresolved_intent")
+    unresolved_intent = None
 
     filtered_metadata = filter_metadata(
         df=df,

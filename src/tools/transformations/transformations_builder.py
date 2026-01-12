@@ -1,16 +1,15 @@
 """Utilities to build ImageKit transformation URLs from natural-language queries."""
 
-from typing import List, Dict, Any, Optional
 from io import BytesIO
+import logging
+from typing import List, Dict, Any, Optional
 
 import requests
 from PIL import Image
 from strands import tool
-from urllib.parse import urlparse
 
-from src.modules.ik_transforms.transformation_builder import resolve_imagekit_transform
 from src.clients import CLIENT
-
+from src.modules.ik_transforms.transformation_builder import resolve_imagekit_transform
 
 METADATA: Dict[str, Any] = {
     "resource": "transformations.builder",
@@ -24,51 +23,8 @@ METADATA: Dict[str, Any] = {
 DEFAULT_IMAGEKIT_SRC = "https://ik.imagekit.io/your_imagekit_id/default-image.jpg"
 MAX_MP = 16  # Explicitly specified in ImageKit docs
 
-
-def handle_ik_genimg(
-    url: str,
-    transformations: List[Dict[str, Any]],
-) -> Optional[str]:
-    """
-    Handle path-based AI image generation (ik-genimg).
-
-    If an ik-genimg transformation is present, constructs and returns
-    the correct source URL for image generation.
-
-    If not present, returns None.
-    """
-
-    genimg_block = None
-    for t in transformations:
-        if "ik-genimg-prompt" in t:
-            genimg_block = t
-            break
-
-    if not genimg_block:
-        return None
-
-    # -------------------------------------------------
-    # Extract ImageKit account base URL
-    # -------------------------------------------------
-    parsed = urlparse(url)
-    path_parts = parsed.path.strip("/").split("/")
-
-    if not path_parts:
-        raise ValueError("Invalid ImageKit URL: cannot extract account ID")
-
-    account_id = path_parts[0]
-    base_url = f"{parsed.scheme}://{parsed.netloc}/{account_id}/"
-
-    # -------------------------------------------------
-    # Build ik-genimg path
-    # -------------------------------------------------
-    prompt = genimg_block["ik-genimg-prompt"]
-    gen_path = genimg_block["ik-genimg-path"].lstrip("/")
-
-    if gen_path.endswith("/"):
-        gen_path = gen_path[:-1]
-
-    return f"{base_url}ik-genimg-prompt-{prompt}/{gen_path}"
+logger = logging.getLogger("tools.transformation_builder")
+logger.setLevel(logging.DEBUG)
 
 
 def handle_retouch_and_upscale(
@@ -142,12 +98,6 @@ def preprocess_url(
     - ik-genimg path-based image generation
     - Resolution validation for e-retouch / e-upscale transformations
     """
-
-    genimg_url = handle_ik_genimg(url, transformations)
-    if genimg_url:
-        handle_retouch_and_upscale(genimg_url, transformations)
-        return genimg_url
-
     handle_retouch_and_upscale(url, transformations)
 
     return url
@@ -198,7 +148,8 @@ async def transformation_builder_tool(
         carry out the transformations.
 
     src : str, optional
-        The source image URL to which the transformation will be applied.
+        The source imagekit file URL to which the transformation will be applied.
+        The url should be from imagekit delivery domain.
         This must be a valid ImageKit-accessible image URL.
         Defaults to a placeholder ImageKit image.
 
@@ -221,4 +172,5 @@ async def transformation_builder_tool(
         src=src,
         transformation=transformation,
     )
+    logger.debug(f"Built transformation URL: {url}")
     return url

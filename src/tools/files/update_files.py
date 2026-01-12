@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
 from strands import tool
 
@@ -23,7 +23,7 @@ async def update_files(
     description: Optional[str] = None,
     extensions: Optional[Any] = None,
     remove_ai_tags: Optional[Any] = None,
-    tags: Optional[Any] = None,
+    tags: Optional[List[str]] = None,
     webhook_url: Optional[str] = None,
     publish: Optional[Dict[str, Any]] = None,
 ) -> Any:
@@ -62,14 +62,14 @@ async def update_files_tool(
     description: Optional[str] = None,
     extensions: Optional[Any] = None,
     remove_ai_tags: Optional[Any] = None,
-    tags: Optional[Any] = None,
+    tags: Optional[List[str]] = None,
     webhook_url: Optional[str] = None,
     publish: Optional[Dict[str, Any]] = None,
 ) -> Any:
     """Update attributes of the current version of a file.
 
     This tool updates metadata and attributes of the current version of
-    an ImageKit file. Supported updates include tags, custom metadata,
+    an ImageKit file. Supported updates include tags, ai tags, custom metadata,
     coordinates, description, AI tag removal, publication status, and
     applying AI or media processing extensions.
 
