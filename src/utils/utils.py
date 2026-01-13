@@ -21,6 +21,7 @@ def maybe_filter(spec: Optional[Any], response: Any) -> Any:
         if spec:
             return glom.glom(response, spec)
     except glom.core.PathAccessError as e:
+        # logger.error(e)
         logger.info(
             (
                 "There was some problem accessing the response fields you requested. ",

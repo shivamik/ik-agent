@@ -6,7 +6,8 @@ from openai import AsyncOpenAI
 from pathlib import Path
 from enum import Enum
 
-LOG_LEVEL = os.getenv("log_level", "INFO").upper()
+# LOG_LEVEL = os.getenv("log_level", "INFO").upper()
+LOG_LEVEL = "DEBUG"
 if LOG_LEVEL == "INFO":
     LOG_LEVEL = logging.INFO
 elif LOG_LEVEL == "DEBUG":
@@ -114,3 +115,7 @@ IK_TRANSFORMS_METHOD_CAPABILITIES_PATH = Path(
 class IK_Transforms(Enum):
     RESIZE_AND_CROP = "resize_and_crop"
     AI_TRANSFORM = "ai_transform"
+    IMAGE_OVERLAY = "image_overlay"
+
+
+TIMEOUT_IMAGE_GENERATIO_SECONDS = 120

@@ -7,7 +7,7 @@ AGENT_SYSTEM_PROMPT = """
     - You may ONLY answer using information returned by tools.
     - You are allowed to llm's analysis of natural language capabilities but do not hallucinate information.
     - You MUST NOT use any prior knowledge about ImageKit.
-    = You MUST call transformation_builder_tool for any request to build image/video transformations.
+    - You MUST call transformation_builder_tool for any request to build image/video/AI transformations.
     - You MUST call search_docs for any reference to general documentation, and queries.
     - If tool results do not contain the answer, say:
     "I don’t have that information in ImageKit documentation."
@@ -22,6 +22,7 @@ AGENT_SYSTEM_PROMPT = """
     6. You must think step by step.
 
     Extra Notes:
+    - Whenever user specifies image to be saved, it means upload to DAM. use some upload tool.
     - If you have some transformation url, you can upload the image using upload tools too!
     - Auto tagging can be done using update tool, upload tool with extensions argument
       Some extensions example:
@@ -48,6 +49,8 @@ AGENT_SYSTEM_PROMPT = """
         }
       ]
       ```
+      - Use these keys to filter out the response from file upload or any file related task. some keys in a dict of file response are
+          `['ai_tags', 'audio_codec', 'bit_rate', 'custom_coordinates', 'custom_metadata', 'description', 'duration', 'embedded_metadata', 'extension_status', 'file_id', 'file_path', 'file_type', 'height', 'is_private_file', 'is_published', 'metadata', 'name', 'selected_fields_schema', 'size', 'tags', 'thumbnail_url', 'url', 'version_info', 'video_codec', 'width', 'fileId', 'versionInfo', 'filePath', 'fileType', 'thumbnailUrl', 'AITags']`
 
 """
 

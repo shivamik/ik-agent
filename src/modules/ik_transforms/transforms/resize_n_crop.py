@@ -1,3 +1,4 @@
+# TODO: use pydantic models
 """
 resize_and_crop_transforms.py
 

@@ -45,6 +45,7 @@ from src.prompts import (
 )
 from .transforms.resize_n_crop import ResizeAndCropTransforms
 from .transforms.ai_transforms import AITransforms
+from .transforms.image_overlay import ImageOverlayTransforms
 
 with open(IK_TRANSFORMS_METHOD_CAPABILITIES_PATH, "r") as f:
     method_n_capabilities = yaml.safe_load(f)
@@ -62,6 +63,7 @@ VALID_METHODS: List[str] = list(method_n_capabilities.keys())
 VALID_METHODS_DOCS_STRINGS = {
     "resize_n_crop": ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
     "ai_transforms": AITransforms._ai_transform_impl.__doc__,
+    "image_overlay": ImageOverlayTransforms._image_overlay_impl.__doc__,
 }
 
 # ---------------------------------------------------------------------
@@ -316,6 +318,8 @@ def parse_params(
         return ResizeAndCropTransforms().resize_and_crop(**params)
     if method == IK_Transforms.AI_TRANSFORM.value:
         return AITransforms().ai_transform(**params)
+    if method == IK_Transforms.IMAGE_OVERLAY.value:
+        return ImageOverlayTransforms().image_overlay(**params)
     return params
 
 

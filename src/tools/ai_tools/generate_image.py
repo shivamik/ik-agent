@@ -5,8 +5,10 @@ from strands import tool
 from urllib.parse import urlparse, quote
 
 from src.tools.assets.list_assets import list_assets
+from src.config import TIMEOUT_IMAGE_GENERATIO_SECONDS, LOG_LEVEL
 
 logger = logging.getLogger("tools.generate_image")
+logger.setLevel(LOG_LEVEL)
 
 METADATA: Dict[str, Any] = {
     "resource": "generate_image",
@@ -20,7 +22,6 @@ METADATA: Dict[str, Any] = {
 
 async def _probe_imagekit_url(
     url: str,
-    *,
     timeout_seconds: int = 10,
 ) -> None:
     """
@@ -58,7 +59,11 @@ async def _probe_imagekit_url(
                     "ImageKit generation in progress (intermediate): %s",
                     url,
                 )
-                return
+                return {
+                    "status": "processing",
+                    "url": url,
+                    "message": "Image generation in progress. For given url",
+                }
 
             # Successful & ready
             if resp.status_code == 200:
@@ -84,7 +89,9 @@ async def trigger_imagekit_generation(url: str) -> None:
     """
     Schedule ImageKit generation probe without blocking.
     """
-    return await _probe_imagekit_url(url)
+    return await _probe_imagekit_url(
+        url, timeout_seconds=TIMEOUT_IMAGE_GENERATIO_SECONDS
+    )
 
 
 @tool(
@@ -158,6 +165,7 @@ async def imagekit_generate_image(
         image_path = image_path.lstrip("/")
         gen_image = f"{gen_image}/{image_path}"
 
+    logger.debug("Generated ImageKit ik-genimg URL: %s", gen_image)
     # ================ trigger generation =================
     await trigger_imagekit_generation(gen_image)
     return gen_image
