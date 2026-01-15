@@ -101,7 +101,7 @@ class ImageOverlay(BaseModel):
             "bottom_right",
         ]
     ] = None
-    z: Optional[NumberOrExpression] = None
+    z: Optional[float] = None
 
     x: Optional[NumberOrExpression] = None
     y: Optional[NumberOrExpression] = None
@@ -186,58 +186,6 @@ class ImageOverlay(BaseModel):
             raise ValueError("Use either e_grayscale or e_contrast, not both")
 
         return self
-
-    def _build_transform_dict(self) -> Dict[str, Any]:
-        """Collect transformation parameters into ImageKit's short-key dict."""
-        transform: Dict[str, Any] = {}
-
-        for attr in self._TRANSFORM_ATTRS:
-            val = getattr(self, attr)
-            if val is not None:
-                transform[attr] = val
-
-        if self.e_grayscale:
-            transform["e"] = "grayscale"
-        if self.e_contrast:
-            transform["e"] = "contrast"
-
-        if self.e_sharpen:
-            transform["e-sharpen"] = (
-                self.e_sharpen if isinstance(self.e_sharpen, int) else None
-            )
-
-        if isinstance(self.e_usm, EUSM):
-            transform["e-usm"] = (
-                f"{self.e_usm.radius}-{self.e_usm.sigma}-"
-                f"{self.e_usm.amount}-{self.e_usm.threshold}"
-            )
-
-        if isinstance(self.e_shadow, EShadow):
-            transform["e-shadow"] = (
-                f"{self.e_shadow.blur}-{self.e_shadow.saturation}-"
-                f"{self.e_shadow.x_offset}-{self.e_shadow.y_offset}"
-            )
-
-        if isinstance(self.e_gradient, EGradient):
-            transform["e-gradient"] = (
-                f"ld-{self.e_gradient.linear_direction}_"
-                f"from-{self.e_gradient.from_color}_"
-                f"to-{self.e_gradient.to_color}_"
-                f"sp-{self.e_gradient.stop_point}"
-            )
-
-        if isinstance(self.e_distort, EDistort):
-            if self.e_distort.type == "perspective":
-                transform["e-distort"] = (
-                    f"p-{self.e_distort.x1}_{self.e_distort.y1}_"
-                    f"{self.e_distort.x2}_{self.e_distort.y2}_"
-                    f"{self.e_distort.x3}_{self.e_distort.y3}_"
-                    f"{self.e_distort.x4}_{self.e_distort.y4}"
-                )
-            else:
-                transform["e-distort"] = f"a-{self.e_distort.arc_degree}"
-
-        return transform
 
     def to_overlay_dict(self) -> Dict[str, Any]:
         """

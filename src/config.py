@@ -116,6 +116,7 @@ class IK_Transforms(Enum):
     RESIZE_AND_CROP = "resize_and_crop"
     AI_TRANSFORM = "ai_transform"
     IMAGE_OVERLAY = "image_overlay"
+    TEXT_OVERLAY = "text_overlay"
 
 
 TIMEOUT_IMAGE_GENERATIO_SECONDS = 120
