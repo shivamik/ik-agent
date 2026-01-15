@@ -1,99 +1,20 @@
 """Image overlay transformation model for ImageKit."""
 
 import logging
-from typing import Optional, Union, Dict, Any, Literal, TypedDict
-
-from src.config import LOG_LEVEL
-
+from typing import Optional, Union, Dict, Any, Literal
 from pydantic import BaseModel, model_validator
 
+from src.config import LOG_LEVEL
+from src.modules.ik_transforms.types import (
+    NumberOrExpression,
+    EUSM,
+    EShadow,
+    EGradient,
+    EDistort,
+)
 
-NumberOrExpression = Union[int, float, str]
-
-
-class EUSM(BaseModel):
-    radius: int
-    sigma: int
-    amount: float
-    threshold: float
-
-
-class EShadow(BaseModel):
-    blur: int = 10
-    saturation: int = 30
-    x_offset: int = 2
-    y_offset: int = 2
-
-
-class EGradient(BaseModel):
-    linear_direction: Union[int, str] = 180
-    from_color: str = "FFFFFF"
-    to_color: str = "000000"
-    stop_point: Union[int, str] = 1
-
-
-class EDistort(BaseModel):
-    x1: int
-    y1: int
-    x2: int
-    y2: int
-    x3: int
-    y3: int
-    x4: int
-    y4: int
-    type: Literal["perspective", "arc"] = "perspective"
-    arc_degree: Optional[int] = None
-
-
-class ImageOverlayParams(TypedDict, total=False):
-    image_path: Optional[str]
-    image_path_encoded: Optional[str]
-    w: Optional[NumberOrExpression]
-    h: Optional[NumberOrExpression]
-    ar: Optional[NumberOrExpression]
-    c: Optional[Literal["force", "at_max", "at_least"]]
-    cm: Optional[Literal["extract", "pad_resize"]]
-    fo: Optional[
-        Literal[
-            "face",
-            "center",
-            "top",
-            "bottom",
-            "left",
-            "right",
-            "top_left",
-            "top_right",
-            "bottom_left",
-            "bottom_right",
-        ]
-    ]
-    z: Optional[NumberOrExpression]
-    x: Optional[NumberOrExpression]
-    y: Optional[NumberOrExpression]
-    xc: Optional[NumberOrExpression]
-    yc: Optional[NumberOrExpression]
-    lx: Optional[NumberOrExpression]
-    ly: Optional[NumberOrExpression]
-    lfo: Optional[str]
-    bg: Optional[str]
-    b: Optional[str]
-    o: Optional[int]
-    r: Optional[Union[int, str]]
-    rt: Optional[int]
-    fl: Optional[str]
-    q: Optional[int]
-    bl: Optional[int]
-    dpr: Optional[Union[float, str]]
-    t: Optional[Union[bool, int]]
-    e_grayscale: bool
-    e_contrast: bool
-    e_sharpen: Union[bool, int]
-    e_usm: Union[EUSM, bool]
-    e_shadow: Union[EShadow, bool]
-    e_gradient: Union[EGradient, bool]
-    e_distort: Union[EDistort, bool]
-    enabled: bool
-    child: Optional["ImageOverlay"]
+logger = logging.getLogger("transforms.image_overlay")
+logger.setLevel(LOG_LEVEL)
 
 
 class ImageOverlay(BaseModel):
@@ -155,7 +76,7 @@ class ImageOverlay(BaseModel):
     # IMAGE SOURCE
     # -------------------------------------------------
     image_path: Optional[str] = None
-    image_path_encoded: Optional[str] = None
+    encoded: bool = False
 
     # -------------------------------------------------
     # SIZE & CROP
@@ -192,7 +113,19 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     lx: Optional[NumberOrExpression] = None
     ly: Optional[NumberOrExpression] = None
-    lfo: Optional[str] = None
+    lfo: Optional[
+        Literal[
+            "center",
+            "top",
+            "bottom",
+            "left",
+            "right",
+            "top_left",
+            "top_right",
+            "bottom_left",
+            "bottom_right",
+        ]
+    ] = None
 
     # -------------------------------------------------
     # APPEARANCE
@@ -226,11 +159,18 @@ class ImageOverlay(BaseModel):
 
     @model_validator(mode="after")
     def validate_image_source(self):
-        if not (self.image_path or self.image_path_encoded):
-            raise ValueError("ImageOverlay requires image_path or image_path_encoded")
+        if not self.image_path:
+            raise ValueError("ImageOverlay requires image_path")
 
-        if self.image_path and self.image_path_encoded:
-            raise ValueError("Use only one of image_path or image_path_encoded")
+        if self.image_path == "ik_canvas":
+            if self.w is None or self.h is None:
+                raise ValueError("Solid color overlay requires w and h dimensions")
+
+            # if self.lx is None or self.ly is None:
+            #     raise ValueError("Solid color overlay requires lx and ly positioning")
+
+            if self.bg is None:
+                raise ValueError("Solid color overlay requires bg (background color)")
 
         if self.z is not None and self.fo != "face":
             raise ValueError("z (zoom) requires fo='face'")
@@ -304,31 +244,89 @@ class ImageOverlay(BaseModel):
         Convert the overlay model into the nested dict structure expected by
         the ImageKit URL builder.
 
-        Returns:
-            Dict[str, Any]: A structure of the shape
-            `{"overlay": {"type": "image", "input": "...", "position": {...}, "transformation": [...]}}`.
-            Empty sections are removed for a minimal payload. When `enabled`
-            is False, an empty dict is returned so callers can skip disabled
-            layers without extra branching.
+        Uses `model_dump()` to ensure all NumberOrExpression fields are
+        serialized correctly (e.g. negative numbers -> 'N{abs(x)}').
         """
+        dumped = self.model_dump(exclude_none=True)
 
         overlay: Dict[str, Any] = {
             "type": "image",
-            "input": self.image_path or self.image_path_encoded,
-            "encoding": "auto",
-            "position": {},
-            "timing": {},
+            "input": dumped["image_path"],
+            "encoding": "plain" if not dumped.get("encoded") else "base64",
         }
 
-        if self.lx is not None:
-            overlay["position"]["x"] = self.lx
-        if self.ly is not None:
-            overlay["position"]["y"] = self.ly
-        if self.lfo is not None:
-            overlay["position"]["focus"] = self.lfo
+        # -------------------------------------------------
+        # POSITION
+        # -------------------------------------------------
+        position: Dict[str, Any] = {}
 
-        transform = self._build_transform_dict()
+        if "lx" in dumped:
+            position["x"] = dumped["lx"]
 
+        if "ly" in dumped:
+            position["y"] = dumped["ly"]
+
+        if "lfo" in dumped:
+            position["focus"] = dumped["lfo"]
+
+        if position:
+            overlay["position"] = position
+
+        # -------------------------------------------------
+        # TRANSFORMATIONS
+        # -------------------------------------------------
+        transform: Dict[str, Any] = {}
+
+        for attr in self._TRANSFORM_ATTRS:
+            if attr in dumped:
+                transform[attr] = dumped[attr]
+
+        # effects
+        if dumped.get("e_grayscale"):
+            transform["e"] = "grayscale"
+
+        if dumped.get("e_contrast"):
+            transform["e"] = "contrast"
+
+        if isinstance(self.e_sharpen, int):
+            transform["e-sharpen"] = self.e_sharpen
+        elif dumped.get("e_sharpen") is True:
+            transform["e-sharpen"] = None
+
+        if isinstance(self.e_usm, EUSM):
+            transform["e-usm"] = (
+                f"{self.e_usm.radius}-{self.e_usm.sigma}-"
+                f"{self.e_usm.amount}-{self.e_usm.threshold}"
+            )
+
+        if isinstance(self.e_shadow, EShadow):
+            transform["e-shadow"] = (
+                f"{self.e_shadow.blur}-{self.e_shadow.saturation}-"
+                f"{self.e_shadow.x_offset}-{self.e_shadow.y_offset}"
+            )
+
+        if isinstance(self.e_gradient, EGradient):
+            transform["e-gradient"] = (
+                f"ld-{self.e_gradient.linear_direction}_"
+                f"from-{self.e_gradient.from_color}_"
+                f"to-{self.e_gradient.to_color}_"
+                f"sp-{self.e_gradient.stop_point}"
+            )
+
+        if isinstance(self.e_distort, EDistort):
+            if self.e_distort.type == "perspective":
+                transform["e-distort"] = (
+                    f"p-{dumped['e_distort']['x1']}_{dumped['e_distort']['y1']}_"
+                    f"{dumped['e_distort']['x2']}_{dumped['e_distort']['y2']}_"
+                    f"{dumped['e_distort']['x3']}_{dumped['e_distort']['y3']}_"
+                    f"{dumped['e_distort']['x4']}_{dumped['e_distort']['y4']}"
+                )
+            else:
+                transform["e-distort"] = f"a-{self.e_distort.arc_degree}"
+
+        # -------------------------------------------------
+        # NESTED OVERLAY
+        # -------------------------------------------------
         if self.child is not None:
             child_overlay = self.child.to_overlay_dict()
             if child_overlay:
@@ -336,13 +334,6 @@ class ImageOverlay(BaseModel):
 
         if transform:
             overlay["transformation"] = [transform]
-
-        if not overlay["position"]:
-            overlay.pop("position")
-        if not overlay["timing"]:
-            overlay.pop("timing")
-        if "transformation" in overlay and not overlay["transformation"]:
-            overlay.pop("transformation")
 
         return {"overlay": overlay}
 
@@ -362,34 +353,32 @@ class ImageOverlayTransforms:
     constraints, effect compatibility, and nested overlay composition.
     """
 
-    def __init__(self) -> None:
-        self.logger = logging.getLogger("transforms.image_overlay")
-        self.logger.setLevel(LOG_LEVEL)
-
     def image_overlay(self, **params: Any) -> Dict[str, Any]:
         """
         Public entry point. Filters unsupported params and forwards the rest to
         `_image_overlay_impl`. Unknown keys are logged (debug) and ignored so
         callers can pass broader dictionaries without failing.
         """
-        known: ImageOverlayParams = {}
-        extra: Dict[str, Any] = {}
+        known_keys = ImageOverlay.model_fields.keys()
+
+        known: dict[str, Any] = {}
+        extra: dict[str, Any] = {}
 
         for k, v in params.items():
-            if k in ImageOverlayParams.__annotations__:
+            if k in known_keys:
                 known[k] = v
             else:
                 extra[k] = v
 
         if extra:
-            self.logger.debug("Ignoring unsupported overlay params: %s", extra)
+            logger.debug("Ignoring unsupported overlay params: %s", extra)
 
         return self._image_overlay_impl(**known)
 
     def _image_overlay_impl(
         self,
         image_path: Optional[str] = None,
-        image_path_encoded: Optional[str] = None,
+        encoded: bool = False,
         w: Optional[NumberOrExpression] = None,
         h: Optional[NumberOrExpression] = None,
         ar: Optional[NumberOrExpression] = None,
@@ -440,27 +429,22 @@ class ImageOverlayTransforms:
         Build and normalize an ImageKit **image overlay** into a single overlay
         transformation dictionary.
 
-        This method is the canonical adapter between a **rich Python API**
-        (explicit, validated parameters) and ImageKit’s **compact transformation
-        grammar**. Every argument mirrors ImageKit’s overlay capabilities and
-        supports arithmetic expressions where applicable.
-
         Use this docstring as a **ground-truth parameter map** when prompting
         an LLM: all constraints, coupling rules, and defaults are documented here.
 
+        Note: This transform can add image or solid color overlays to a base image.
+        For Solid Color overlays, use `image_path="ik_canvas"` and specify
+        dimensions via `w` and `h` and `bg` for color.
         -------------------------------------------------------------------------
         IMAGE SOURCE (exactly one required)
         -------------------------------------------------------------------------
         image_path:
-            Plain ImageKit media library path for the overlay image.
-            Use this when the path contains only alphanumeric characters,
-            "@", "-", or "_".
-            Example: `"logo.png"` or `"path@@to@@image.png"`
+            Plain ImageKit media library path for the overlay image or
+            use ik_canvas for solid Color overlays
+            Example: `"logo.png"` or `ik_canvas`
 
-        image_path_encoded:
-            Base64 + URL-encoded image path or external URL.
-            Required if the path contains special characters or is an HTTP(S) URL.
-            Mutually exclusive with `image_path`.
+        encoded:
+            a flag to specify if we need to encode image_path to base64 or not.
 
         -------------------------------------------------------------------------
         SIZE, CROP & FOCUS (applied to the overlay image itself)
@@ -614,7 +598,7 @@ class ImageOverlayTransforms:
 
         overlay = ImageOverlay(
             image_path=image_path,
-            image_path_encoded=image_path_encoded,
+            encoded=encoded,
             w=w,
             h=h,
             ar=ar,
