@@ -173,5 +173,9 @@ async def transformation_builder_tool(
         src=src,
         transformation=transformation,
     )
+    # ? TODO: Add a function that checks if transformation url is usable
+    # or throws 400 error
+    # or processing
+    # or if 400 then return image details. of original image
     logger.debug(f"Built transformation URL: {url}")
     return url

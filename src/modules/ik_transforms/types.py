@@ -12,13 +12,10 @@ Assumes you already have NumberOrExpression + EXPR_REGEX as in your snippet.
 from __future__ import annotations
 
 import re
-from typing import Any, Optional, Union, Literal
+from typing import Any, Optional, Union, Literal, Dict
 
 from pydantic_core import core_schema
-from pydantic import (
-    GetCoreSchemaHandler,
-    BaseModel,
-)
+from pydantic import GetCoreSchemaHandler, BaseModel, model_validator, field_validator
 # reuse your arithmetic expression regex
 # EXPR_REGEX must already be defined
 
@@ -88,6 +85,238 @@ FONT_FAMILY = set(
         "Vollkorn",
     ]
 )
+
+POSITION = Literal[
+    "center",
+    "top",
+    "bottom",
+    "left",
+    "right",
+    "top_left",
+    "top_right",
+    "bottom_left",
+    "bottom_right",
+]
+
+# -------------------------------------------------------------------
+# SVG recognized color keywords (from spec)
+# -------------------------------------------------------------------
+
+SVG_COLOR_KEYWORDS = {
+    "aliceblue",
+    "antiquewhite",
+    "aqua",
+    "aquamarine",
+    "azure",
+    "beige",
+    "bisque",
+    "black",
+    "blanchedalmond",
+    "blue",
+    "blueviolet",
+    "brown",
+    "burlywood",
+    "cadetblue",
+    "chartreuse",
+    "chocolate",
+    "coral",
+    "cornflowerblue",
+    "cornsilk",
+    "crimson",
+    "cyan",
+    "darkblue",
+    "darkcyan",
+    "darkgoldenrod",
+    "darkgray",
+    "darkgreen",
+    "darkgrey",
+    "darkkhaki",
+    "darkmagenta",
+    "darkolivegreen",
+    "darkorange",
+    "darkorchid",
+    "darkred",
+    "darksalmon",
+    "darkseagreen",
+    "darkslateblue",
+    "darkslategray",
+    "darkslategrey",
+    "darkturquoise",
+    "darkviolet",
+    "deeppink",
+    "deepskyblue",
+    "dimgray",
+    "dimgrey",
+    "dodgerblue",
+    "firebrick",
+    "floralwhite",
+    "forestgreen",
+    "fuchsia",
+    "gainsboro",
+    "ghostwhite",
+    "gold",
+    "goldenrod",
+    "gray",
+    "grey",
+    "green",
+    "greenyellow",
+    "honeydew",
+    "hotpink",
+    "indianred",
+    "indigo",
+    "ivory",
+    "khaki",
+    "lavender",
+    "lavenderblush",
+    "lawngreen",
+    "lemonchiffon",
+    "lightblue",
+    "lightcoral",
+    "lightcyan",
+    "lightgoldenrodyellow",
+    "lightgray",
+    "lightgreen",
+    "lightgrey",
+    "lightpink",
+    "lightsalmon",
+    "lightseagreen",
+    "lightskyblue",
+    "lightslategray",
+    "lightslategrey",
+    "lightsteelblue",
+    "lightyellow",
+    "lime",
+    "limegreen",
+    "linen",
+    "magenta",
+    "maroon",
+    "mediumaquamarine",
+    "mediumblue",
+    "mediumorchid",
+    "mediumpurple",
+    "mediumseagreen",
+    "mediumslateblue",
+    "mediumspringgreen",
+    "mediumturquoise",
+    "mediumvioletred",
+    "midnightblue",
+    "mintcream",
+    "mistyrose",
+    "moccasin",
+    "navajowhite",
+    "navy",
+    "oldlace",
+    "olive",
+    "olivedrab",
+    "orange",
+    "orangered",
+    "orchid",
+    "palegoldenrod",
+    "palegreen",
+    "paleturquoise",
+    "palevioletred",
+    "papayawhip",
+    "peachpuff",
+    "peru",
+    "pink",
+    "plum",
+    "powderblue",
+    "purple",
+    "red",
+    "rosybrown",
+    "royalblue",
+    "saddlebrown",
+    "salmon",
+    "sandybrown",
+    "seagreen",
+    "seashell",
+    "sienna",
+    "silver",
+    "skyblue",
+    "slateblue",
+    "slategray",
+    "slategrey",
+    "snow",
+    "springgreen",
+    "steelblue",
+    "tan",
+    "teal",
+    "thistle",
+    "tomato",
+    "turquoise",
+    "violet",
+    "wheat",
+    "white",
+    "whitesmoke",
+    "yellow",
+    "yellowgreen",
+}
+
+# -------------------------------------------------------------------
+# Regex patterns
+# -------------------------------------------------------------------
+
+RGB_HEX_REGEX = re.compile(r"^[0-9A-Fa-f]{6}$")
+RGBA_HEX_REGEX = re.compile(r"^[0-9A-Fa-f]{6}([0-9]{2})$")  # last 2 = 00–99
+
+
+class Number:
+    """
+    ImageKit arithmetic scalar.
+
+    - int :
+        - negative → 'N{abs(value)}'
+        - positive → str(value)
+    - str:
+        - must be a valid ImageKit arithmetic expression
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        # 1️⃣ base union
+        union = core_schema.union_schema(
+            [
+                core_schema.int_schema(),
+            ]
+        )
+
+        # 2️⃣ validation wrapper
+        validated = core_schema.no_info_plain_validator_function(cls.validate)
+
+        # 3️⃣ serialization
+        serializer = core_schema.plain_serializer_function_ser_schema(
+            cls.serialize,
+            return_schema=core_schema.str_schema(),
+        )
+
+        # 4️⃣ chain everything together
+        return core_schema.chain_schema(
+            [
+                union,
+                validated,
+            ],
+            serialization=serializer,
+        )
+
+    @staticmethod
+    def validate(value: int) -> int:
+        if isinstance(value, (int)):
+            return value
+
+        raise TypeError("Invalid type for Number")
+
+    @staticmethod
+    def serialize(value: Union[int, str]) -> str:
+        if isinstance(value, (int)):
+            if value < 0:
+                return f"N{abs(value)}"
+            return str(value)
+
+        return value
 
 
 class NumberOrExpression:
@@ -291,3 +520,179 @@ class AlphaLevel:
     @staticmethod
     def serialize(value: int) -> str:
         return str(value)
+
+
+class BaseLayerMode(BaseModel):
+    """
+    Base class for all ImageKit layer modes.
+    """
+
+    mode: str
+
+    def to_ik_params(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
+
+class MultiplyMode(BaseLayerMode):
+    """
+    Multiply blend mode.
+
+    Darkens the output by multiplying pixel values of the layer
+    with the base image.
+    """
+
+    mode: Literal["multiply"] = "multiply"
+
+    def to_ik_params(self) -> Dict[str, str]:
+        return {"lm": "multiply"}
+
+
+class CutoutMode(BaseLayerMode):
+    """
+    Cutout layer mode.
+
+    Creates transparency in the base image where the layer is opaque.
+    """
+
+    mode: Literal["cutout"] = "cutout"
+
+    def to_ik_params(self) -> Dict[str, str]:
+        return {"lm": "cutout"}
+
+
+class CutterMode(BaseLayerMode):
+    """
+    Cutter layer mode.
+
+    Keeps opaque areas of the layer and discards the rest of the base image.
+    Output dimensions match the layer image.
+    """
+
+    mode: Literal["cutter"] = "cutter"
+
+    def to_ik_params(self) -> Dict[str, str]:
+        return {"lm": "cutter"}
+
+
+class DisplacementMode(BaseLayerMode):
+    """
+    Displacement layer mode.
+
+    Uses the layer image as a displacement map.
+    - Red channel → horizontal displacement
+    - Green channel → vertical displacement
+    """
+
+    mode: Literal["displace"] = "displace"
+
+    x: Optional[int] = None
+    y: Optional[int] = None
+
+    @model_validator(mode="after")
+    def validate_xy(self):
+        if self.x is None and self.y is None:
+            raise ValueError("Displacement mode requires at least one of 'x' or 'y'.")
+        return self
+
+    def to_ik_params(self) -> Dict[str, str]:
+        params = {"lm": "displace"}
+        if self.x is not None:
+            params["x"] = str(self.x)
+        if self.y is not None:
+            params["y"] = str(self.y)
+        return params
+
+
+ImageLayerMode = Union[
+    MultiplyMode,
+    CutoutMode,
+    CutterMode,
+    DisplacementMode,
+]
+
+TextLayerMode = Union[
+    CutoutMode,
+    CutterMode,
+    DisplacementMode,
+]
+
+"""
+color.py
+
+Validated Color type for ImageKit transformations.
+
+Accepted formats:
+- SVG recognized color keyword (lowercase)
+- RGB hex code: RRGGBB
+- RGBA hex code: RRGGBBAA (AA = 00–99 opacity)
+"""
+# -------------------------------------------------------------
+# Color type
+# -------------------------------------------------------------------
+
+
+class Color(str):
+    """
+    Validated ImageKit color value.
+
+    Examples:
+    - "red"
+    - "lightskyblue"
+    - "FF0000"
+    - "FF000040"
+    """
+
+    @classmethod
+    def validate(cls, v: str) -> "Color":
+        if not isinstance(v, str):
+            raise TypeError("Color must be a string")
+
+        value = v.strip()
+
+        # SVG color keyword
+        if value.lower() in SVG_COLOR_KEYWORDS:
+            return cls(value.lower())
+
+        # RGB hex
+        if RGB_HEX_REGEX.fullmatch(value):
+            return cls(value.upper())
+
+        # RGBA hex (opacity 00–99)
+        m = RGBA_HEX_REGEX.fullmatch(value)
+        if m:
+            alpha = int(m.group(1))
+            if 0 <= alpha <= 99:
+                return cls(value.upper())
+
+        raise ValueError(
+            f"Invalid color '{v}'. Must be one of:\n"
+            "- SVG color keyword (e.g. 'aqua')\n"
+            "- RGB hex code (e.g. 'FF0000')\n"
+            "- RGBA hex code with opacity 00–99 (e.g. 'FF000040')"
+        )
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, source, handler):
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(),
+        )
+
+
+class BlurredBackground(BaseModel):
+    blur_intensity: Union[int] = "auto"
+    brightness: Number
+
+    @field_validator("brightness")
+    def validate_brightness(cls, v):
+        if isinstance(v, int) and not (-255 <= v <= 255):
+            raise ValueError("brightness must be between -255 and 255")
+        return v
+
+
+class GradientBackground(BaseModel):
+    mode: Literal["dominant"] = "dominant"
+    pallete_size: set[int] = {2, 4}
+
+
+BACKGROUND = Union[Literal["dominant"], Color, BlurredBackground, GradientBackground]

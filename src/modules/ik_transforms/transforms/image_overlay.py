@@ -1,3 +1,5 @@
+# TODO: Add examples for gradient as underlay
+# TODO: Add example as
 """Image overlay transformation model for ImageKit."""
 
 import logging
@@ -11,6 +13,11 @@ from src.modules.ik_transforms.types import (
     EShadow,
     EGradient,
     EDistort,
+    ImageLayerMode,
+    DisplacementMode,
+    MultiplyMode,
+    CutoutMode,
+    CutterMode,
 )
 
 logger = logging.getLogger("transforms.image_overlay")
@@ -155,7 +162,31 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     # NESTED OVERLAY (ONLY ONE)
     # -------------------------------------------------
+    layer_mode: Optional[Literal["displace", "multiply", "cutout", "cutter"]] = None
     child: Optional["ImageOverlay"] = None
+
+    def _resolve_layer_mode(self) -> Optional[ImageLayerMode]:
+        if self.layer_mode is None:
+            return None
+
+        if self.layer_mode == "displace":
+            if self.x is None and self.y is None:
+                raise ValueError(
+                    "Displacement layer mode requires at least one of x or y."
+                )
+            return DisplacementMode(x=self.x, y=self.y)
+
+        if self.layer_mode == "multiply":
+            return MultiplyMode()
+
+        if self.layer_mode == "cutout":
+            return CutoutMode()
+
+        if self.layer_mode == "cutter":
+            return CutterMode()
+
+        # defensive (should never happen due to Literal)
+        raise ValueError(f"Unknown layer mode: {self.layer_mode}")
 
     @model_validator(mode="after")
     def validate_image_source(self):
@@ -176,8 +207,10 @@ class ImageOverlay(BaseModel):
             raise ValueError("z (zoom) requires fo='face'")
 
         if any(v is not None for v in (self.x, self.y, self.xc, self.yc)):
-            if self.cm != "extract":
-                raise ValueError("x/y/xc/yc require cm='extract'")
+            if (self.cm != "extract") and (self.layer_mode is None):
+                raise ValueError(
+                    "x/y/xc/yc require cm='extract' or layer_mode='displace'"
+                )
 
         if self.dpr is not None and not (self.w or self.h):
             raise ValueError("dpr requires w or h")
@@ -280,6 +313,10 @@ class ImageOverlay(BaseModel):
             if child_overlay:
                 transform["overlay"] = child_overlay["overlay"]
 
+        layer_mode_obj = self._resolve_layer_mode()
+        if layer_mode_obj:
+            transform.update(layer_mode_obj.to_ik_params())
+
         if transform:
             overlay["transformation"] = [transform]
 
@@ -371,6 +408,9 @@ class ImageOverlayTransforms:
         e_shadow: Union[EShadow, bool] = False,
         e_gradient: Union[EGradient, bool] = False,
         e_distort: Union[EDistort, bool] = False,
+        layer_mode: Optional[
+            Literal["displace", "multiply", "cutout", "cutter"]
+        ] = None,
         child: Optional[dict] = None,
     ) -> Dict[str, Any]:
         """
@@ -578,6 +618,7 @@ class ImageOverlayTransforms:
             e_shadow=e_shadow,
             e_gradient=e_gradient,
             e_distort=e_distort,
+            layer_mode=layer_mode,
             child=child,
         )
 

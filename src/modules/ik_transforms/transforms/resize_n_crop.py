@@ -1,4 +1,5 @@
 # TODO: use pydantic models
+# TODO: Add background type support
 """
 resize_and_crop_transforms.py
 

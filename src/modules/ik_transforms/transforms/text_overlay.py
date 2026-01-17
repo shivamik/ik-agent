@@ -11,8 +11,12 @@ from src.modules.ik_transforms.types import (
     PaddingValue,
     AlphaLevel,
     FlipMode,
+    CutoutMode,
+    CutterMode,
+    MultiplyMode,
+    TextLayerMode,
 )
-from src.tools.assets.list_assets import list_assets
+from src.utils.tool_utils import list_assets
 
 logger = logging.getLogger("transforms.text_overlay")
 logger.setLevel(LOG_LEVEL)
@@ -45,6 +49,7 @@ class TextOverlay(BaseModel):
     rotation: Optional[NumberOrExpression] = None
     flip: Optional[FlipMode] = None
     line_height: Optional[NumberOrExpression] = None
+    layer_mode: Optional[Literal["multiply", "cutout", "cutter"]] = None
 
     @field_validator("font_family")
     @classmethod
@@ -71,6 +76,22 @@ class TextOverlay(BaseModel):
         files = await list_assets(search_query=f'name="{font_path}"', limit=1)
         if not files:
             raise ValueError(f"Font file '{font_path}' not found")
+
+    def _resolve_layer_mode(self) -> Optional[TextLayerMode]:
+        if self.layer_mode is None:
+            return None
+
+        if self.layer_mode == "multiply":
+            return MultiplyMode()
+
+        if self.layer_mode == "cutout":
+            return CutoutMode()
+
+        if self.layer_mode == "cutter":
+            return CutterMode()
+
+        # defensive (should never happen due to Literal)
+        raise ValueError(f"Unknown layer mode: {self.layer_mode}")
 
     async def to_overlay_dict(self) -> Dict[str, Any]:
         """
@@ -144,6 +165,10 @@ class TextOverlay(BaseModel):
         if "line_height" in dumped:
             transform["line_height"] = dumped["line_height"]
 
+        layer_mode_obj = self._resolve_layer_mode()
+        if layer_mode_obj:
+            transform.update(layer_mode_obj.to_ik_params())
+
         if transform:
             overlay["transformation"] = [transform]
 
@@ -202,28 +227,11 @@ class TextOverlayTransforms:
         rotation: Optional[NumberOrExpression] = None,
         flip: Optional[FlipMode] = None,
         line_height: Optional[NumberOrExpression] = None,
+        layer_mode: Optional[Literal["multiply", "cutout", "cutter"]] = None,
     ) -> Dict[str, Any]:
-        text_overlay = TextOverlay(
-            text=text,
-            lx=lx,
-            ly=ly,
-            width=width,
-            font_size=font_size,
-            font_family=font_family,
-            color=color,
-            inner_alignment=inner_alignment,
-            padding=padding,
-            alpha=alpha,
-            typography=typography,
-            background=background,
-            corner_radius=corner_radius,
-            rotation=rotation,
-            flip=flip,
-            line_height=line_height,
-        )
         """
         Build and validate a **text overlay layer** for ImageKit image transformations.
-        
+
         Parameters
         ----------
         text : str
@@ -347,6 +355,9 @@ class TextOverlayTransforms:
             Only takes effect when the text spans multiple lines.
             Accepts fixed numbers or arithmetic expressions.
 
+        layer_mode : {"multiply", "cutout", "cutter"}, optional
+            Blending mode for the text layer.
+
         Returns
         -------
         Dict[str, Any]
@@ -363,4 +374,23 @@ class TextOverlayTransforms:
                 }
             }
         """
+        text_overlay = TextOverlay(
+            text=text,
+            lx=lx,
+            ly=ly,
+            width=width,
+            font_size=font_size,
+            font_family=font_family,
+            color=color,
+            inner_alignment=inner_alignment,
+            padding=padding,
+            alpha=alpha,
+            typography=typography,
+            background=background,
+            corner_radius=corner_radius,
+            rotation=rotation,
+            flip=flip,
+            line_height=line_height,
+            layer_mode=layer_mode,
+        )
         return await text_overlay.to_overlay_dict()
