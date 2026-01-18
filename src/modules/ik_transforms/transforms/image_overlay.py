@@ -14,6 +14,7 @@ from src.modules.ik_transforms.types import (
     MultiplyMode,
     CutoutMode,
     CutterMode,
+    BACKGROUND,
 )
 from src.modules.ik_transforms.transforms.effects_and_enhancement import Effects
 
@@ -26,16 +27,16 @@ class ImageOverlay(BaseModel):
     Validated ImageKit image overlay specification.
 
     This model captures all supported layer parameters for placing an image
-    overlay on a base asset. It is intended to be LLM-friendly: every field
-    mirrors ImageKit's short transformation keys (`w`, `h`, `lx`, `ly`, etc.)
+    overlay on a base asset. It is intended to be LLM-friendlayer_y: every field
+    mirrors ImageKit's short transformation keys (`w`, `h`, `layer_x`, `layer_y`, etc.)
     while providing validation for common misuse:
 
-    - Enforces exactly one image input (`image_path` or `image_path_encoded`).
-    - Guards context-sensitive parameters (e.g., `z` only with `fo="face"`,
-      crop coordinates only with `cm="extract"`, `dpr` only when `w` or `h`
+    - Enforces exactlayer_y one image input (`image_path` or `image_path_encoded`).
+    - Guards context-sensitive parameters (e.g., `z` onlayer_y with `fo="face"`,
+      crop coordinates onlayer_y with `cm="extract"`, `dpr` onlayer_y when `w` or `h`
       is provided).
     - Supports a single nested overlay via the `child` field so complex
-      compositions can be built recursively.
+      compositions can be built recursivelayer_y.
 
     Example:
         ```python
@@ -43,38 +44,14 @@ class ImageOverlay(BaseModel):
             image_path="logo.png",
             w=200,
             h="bh_div_5",
-            lx="bw_mul_0.05",
-            ly="bh_mul_0.05",
+            layer_x="bw_mul_0.05",
+            layer_y="bh_mul_0.05",
             e_shadow=EShadow(),  # blur-10 saturation-30 offsets=2,2
         )
         spec = overlay.to_overlay_dict()
         # -> {"overlay": {"type": "image", "input": "logo.png", ...}}
         ```
     """
-
-    _TRANSFORM_ATTRS = (
-        "w",
-        "h",
-        "ar",
-        "c",
-        "cm",
-        "fo",
-        "z",
-        "x",
-        "y",
-        "xc",
-        "yc",
-        "bg",
-        "b",
-        "o",
-        "r",
-        "rt",
-        "fl",
-        "q",
-        "bl",
-        "dpr",
-        "t",
-    )
 
     # -------------------------------------------------
     # IMAGE SOURCE
@@ -85,13 +62,13 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     # SIZE & CROP
     # -------------------------------------------------
-    w: Optional[NumberOrExpression] = None
-    h: Optional[NumberOrExpression] = None
-    ar: Optional[NumberOrExpression] = None
+    width: Optional[NumberOrExpression] = None
+    height: Optional[NumberOrExpression] = None
+    aspect_ratio: Optional[NumberOrExpression] = None
 
-    c: Optional[Literal["force", "at_max", "at_least"]] = None
-    cm: Optional[Literal["extract", "pad_resize"]] = None
-    fo: Optional[
+    crop: Optional[Literal["force", "at_max", "at_least"]] = None
+    crop_mode: Optional[Literal["extract", "pad_resize"]] = None
+    focus: Optional[
         Literal[
             "face",
             "center",
@@ -105,7 +82,7 @@ class ImageOverlay(BaseModel):
             "bottom_right",
         ]
     ] = None
-    z: Optional[float] = None
+    zoom: Optional[float] = None
 
     x: Optional[NumberOrExpression] = None
     y: Optional[NumberOrExpression] = None
@@ -115,9 +92,9 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     # POSITION
     # -------------------------------------------------
-    lx: Optional[NumberOrExpression] = None
-    ly: Optional[NumberOrExpression] = None
-    lfo: Optional[
+    layer_x: Optional[NumberOrExpression] = None
+    layer_y: Optional[NumberOrExpression] = None
+    layer_focus: Optional[
         Literal[
             "center",
             "top",
@@ -134,19 +111,11 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     # APPEARANCE
     # -------------------------------------------------
-    bg: Optional[str] = None
-    b: Optional[str] = None
-    o: Optional[int] = None
-    r: Optional[Union[int, str]] = None
-    rt: Optional[int] = None
-    fl: Optional[str] = None
-    q: Optional[int] = None
-    bl: Optional[int] = None
+    background: Optional[BACKGROUND] = None
+    quality: Optional[int] = None
     dpr: Optional[Union[float, str]] = None
-    t: Optional[Union[bool, int]] = None
-
     # -------------------------------------------------
-    # NESTED OVERLAY (ONLY ONE)
+    # NESTED OVERLAY (ONlayer_y ONE)
     # -------------------------------------------------
     layer_mode: Optional[Literal["displace", "multiply", "cutout", "cutter"]] = None
     child: Optional["ImageOverlay"] = None
@@ -182,29 +151,30 @@ class ImageOverlay(BaseModel):
             raise ValueError("ImageOverlay requires image_path")
 
         if self.image_path == "ik_canvas":
-            if self.w is None or self.h is None:
-                raise ValueError("Solid color overlay requires w and h dimensions")
+            if self.width is None or self.height is None:
+                raise ValueError(
+                    "Solid color overlay requires width and height dimensions"
+                )
 
-            # if self.lx is None or self.ly is None:
-            #     raise ValueError("Solid color overlay requires lx and ly positioning")
+            # if self.layer_x is None or self.layer_y is None:
+            #     raise ValueError("Solid color overlay requires layer_x and layer_y positioning")
 
-            if self.bg is None:
-                raise ValueError("Solid color overlay requires bg (background color)")
+            if self.background is None:
+                raise ValueError(
+                    "Solid color overlay requires background (background color)"
+                )
 
-        if self.z is not None and self.fo != "face":
-            raise ValueError("z (zoom) requires fo='face'")
+        if self.zoom is not None and self.focus != "face":
+            raise ValueError("zoom (zoom) requires focus='face'")
 
         if any(v is not None for v in (self.x, self.y, self.xc, self.yc)):
-            if (self.cm != "extract") and (self.layer_mode is None):
+            if (self.crop_mode != "extract") and (self.layer_mode is None):
                 raise ValueError(
                     "x/y/xc/yc require cm='extract' or layer_mode='displace'"
                 )
 
-        if self.dpr is not None and not (self.w or self.h):
-            raise ValueError("dpr requires w or h")
-
-        if self.e_grayscale and self.e_contrast:
-            raise ValueError("Use either e_grayscale or e_contrast, not both")
+        if self.dpr is not None and not (self.width or self.height):
+            raise ValueError("dpr requires width or height")
 
         return self
 
@@ -214,7 +184,7 @@ class ImageOverlay(BaseModel):
         the ImageKit URL builder.
 
         Uses `model_dump()` to ensure all NumberOrExpression fields are
-        serialized correctly (e.g. negative numbers -> 'N{abs(x)}').
+        serialized correctlayer_y (e.g. negative numbers -> 'N{abs(x)}').
         """
         dumped = self.model_dump(exclude_none=True)
 
@@ -229,14 +199,14 @@ class ImageOverlay(BaseModel):
         # -------------------------------------------------
         position: Dict[str, Any] = {}
 
-        if "lx" in dumped:
-            position["x"] = dumped["lx"]
+        if "layer_x" in dumped:
+            position["x"] = dumped["layer_x"]
 
-        if "ly" in dumped:
-            position["y"] = dumped["ly"]
+        if "layer_y" in dumped:
+            position["y"] = dumped["layer_y"]
 
-        if "lfo" in dumped:
-            position["focus"] = dumped["lfo"]
+        if "layer_focus" in dumped:
+            position["focus"] = dumped["layer_focus"]
 
         if position:
             overlay["position"] = position
@@ -245,10 +215,56 @@ class ImageOverlay(BaseModel):
         # TRANSFORMATIONS
         # -------------------------------------------------
         transform: Dict[str, Any] = {}
+        # width
+        if "width" in dumped:
+            transform["width"] = dumped["width"]
 
-        for attr in self._TRANSFORM_ATTRS:
-            if attr in dumped:
-                transform[attr] = dumped[attr]
+        # height
+        if "height" in dumped:
+            transform["height"] = dumped["height"]
+
+        # aspect_ratio
+        if "aspect_ratio" in dumped:
+            transform["aspect_ratio"] = dumped["aspect_ratio"]
+        # crop
+        if "crop" in dumped:
+            transform["crop"] = dumped["crop"]
+
+        # crop_mode
+        if "crop_mode" in dumped:
+            transform["crop_mode"] = dumped["crop_mode"]
+
+        # focus
+        if "focus" in dumped:
+            transform["focus"] = dumped["focus"]
+
+        # zoom
+        if "zoom" in dumped:
+            transform["zoom"] = dumped["zoom"]
+
+        # x
+        if "x" in dumped:
+            transform["x"] = dumped["x"]
+        # y
+        if "y" in dumped:
+            transform["y"] = dumped["y"]
+
+        # xc
+        if "xc" in dumped:
+            transform["xc"] = dumped["xc"]
+        # yc
+        if "yc" in dumped:
+            transform["yc"] = dumped["yc"]
+        # background
+        # TODO: Handle gradient and other background types
+        if "background" in dumped:
+            transform["background"] = dumped["background"]
+        # quality
+        if "quality" in dumped:
+            transform["quality"] = dumped["quality"]
+        # dpr
+        if "dpr" in dumped:
+            transform["dpr"] = dumped["dpr"]
 
         # -------------------------------------------------
         # NESTED OVERLAY
@@ -264,6 +280,8 @@ class ImageOverlay(BaseModel):
 
         if transform:
             overlay["transformation"] = [transform]
+
+        # TODO: Handle effects
 
         return {"overlay": overlay}
 
@@ -333,9 +351,9 @@ class ImageOverlayTransforms:
         y: Optional[NumberOrExpression] = None,
         xc: Optional[NumberOrExpression] = None,
         yc: Optional[NumberOrExpression] = None,
-        lx: Optional[NumberOrExpression] = None,
-        ly: Optional[NumberOrExpression] = None,
-        lfo: Optional[str] = None,
+        layer_x: Optional[NumberOrExpression] = None,
+        layer_y: Optional[NumberOrExpression] = None,
+        layer_focus: Optional[str] = None,
         q: Optional[int] = None,
         dpr: Optional[Union[float, str]] = None,
         layer_mode: Optional[
@@ -355,7 +373,7 @@ class ImageOverlayTransforms:
         For Solid Color overlays, use `image_path="ik_canvas"` and specify
         dimensions via `w` and `h` and `bg` for color.
         -------------------------------------------------------------------------
-        IMAGE SOURCE (exactly one required)
+        IMAGE SOURCE (exactlayer_y one required)
         -------------------------------------------------------------------------
         image_path:
             Plain ImageKit media library path for the overlay image or
@@ -398,29 +416,29 @@ class ImageOverlayTransforms:
 
         z:
             Zoom factor for object/face-aware cropping.
-            **Only valid when `fo="face"`**.
+            **Onlayer_y valid when `fo="face"`**.
             Values < 1 zoom out, values > 1 zoom in.
 
         x, y:
             Top-left crop coordinates.
-            **Only valid when `cm="extract"`**.
+            **Onlayer_y valid when `cm="extract"`**.
 
         xc, yc:
             Center-based crop coordinates.
-            **Only valid when `cm="extract"`**.
+            **Onlayer_y valid when `cm="extract"`**.
 
         -------------------------------------------------------------------------
         LAYER POSITIONING (relative to base image)
         -------------------------------------------------------------------------
-        lx:
+        layer_x:
             X-axis position of the overlay layer.
             Supports negative values and arithmetic expressions.
 
-        ly:
+        layer_y:
             Y-axis position of the overlay layer.
             Supports negative values and arithmetic expressions.
 
-        lfo:
+        layer_focus:
             Relative layer focus anchor.
             Examples: `"top_left"`, `"center"`, `"bottom_right"`.
 
@@ -466,32 +484,8 @@ class ImageOverlayTransforms:
         -------------------------------------------------------------------------
         EFFECTS (applied to the overlay image)
         -------------------------------------------------------------------------
-        e_grayscale:
-            Convert the overlay image to grayscale.
-
-        e_contrast:
-            Automatically enhance contrast.
-
-        e_sharpen:
-            Sharpen the image.
-            - `True`: default sharpening
-            - `int`: custom sharpening strength
-
-        e_usm:
-            Unsharp mask configuration.
-            Accepts an `EUSM` model or `True` for default behavior.
-
-        e_shadow:
-            Drop shadow effect.
-            Accepts an `EShadow` model or `True`.
-
-        e_gradient:
-            Linear gradient overlay.
-            Accepts an `EGradient` model or `True`.
-
-        e_distort:
-            Distortion effect.
-            Accepts an `EDistort` model for perspective or arc distortion.
+        effects:
+            Effects instance capturing enhancement and filter effects
 
         -------------------------------------------------------------------------
         NESTING
@@ -501,7 +495,7 @@ class ImageOverlayTransforms:
             Optional **single nested overlay**.
             The child overlay is embedded under
             `transformation.overlay` to build layered compositions.
-            (Only one child is supported here by design.)
+            (Onlayer_y one child is supported here by design.)
 
         -------------------------------------------------------------------------
         RETURNS
@@ -529,26 +523,11 @@ class ImageOverlayTransforms:
             y=y,
             xc=xc,
             yc=yc,
-            lx=lx,
-            ly=ly,
-            lfo=lfo,
-            bg=bg,
-            b=b,
-            o=o,
-            r=r,
-            rt=rt,
-            fl=fl,
+            layer_x=layer_x,
+            layer_y=layer_y,
+            layer_focus=layer_focus,
             q=q,
-            bl=bl,
             dpr=dpr,
-            t=t,
-            e_grayscale=e_grayscale,
-            e_contrast=e_contrast,
-            e_sharpen=e_sharpen,
-            e_usm=e_usm,
-            e_shadow=e_shadow,
-            e_gradient=e_gradient,
-            e_distort=e_distort,
             layer_mode=layer_mode,
             child=child,
         )
