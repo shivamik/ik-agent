@@ -384,40 +384,6 @@ class NumberOrExpression:
         return value
 
 
-class EUSM(BaseModel):
-    radius: int
-    sigma: int
-    amount: float
-    threshold: float
-
-
-class EShadow(BaseModel):
-    blur: int = 10
-    saturation: int = 30
-    x_offset: int = 2
-    y_offset: int = 2
-
-
-class EGradient(BaseModel):
-    linear_direction: Union[int, str] = 180
-    from_color: str = "FFFFFF"
-    to_color: str = "000000"
-    stop_point: Union[int, str] = 1
-
-
-class EDistort(BaseModel):
-    x1: NumberOrExpression
-    y1: NumberOrExpression
-    x2: NumberOrExpression
-    y2: NumberOrExpression
-    x3: NumberOrExpression
-    y3: NumberOrExpression
-    x4: NumberOrExpression
-    y4: NumberOrExpression
-    type: Literal["perspective", "arc"] = "perspective"
-    arc_degree: Optional[int] = None
-
-
 class PaddingValue:
     """
     ImageKit padding (pa).

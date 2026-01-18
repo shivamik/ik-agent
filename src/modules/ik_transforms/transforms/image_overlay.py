@@ -9,16 +9,13 @@ from pydantic import BaseModel, model_validator
 from src.config import LOG_LEVEL
 from src.modules.ik_transforms.types import (
     NumberOrExpression,
-    EUSM,
-    EShadow,
-    EGradient,
-    EDistort,
     ImageLayerMode,
     DisplacementMode,
     MultiplyMode,
     CutoutMode,
     CutterMode,
 )
+from src.modules.ik_transforms.transforms.effects_and_enhancement import Effects
 
 logger = logging.getLogger("transforms.image_overlay")
 logger.setLevel(LOG_LEVEL)
@@ -149,21 +146,12 @@ class ImageOverlay(BaseModel):
     t: Optional[Union[bool, int]] = None
 
     # -------------------------------------------------
-    # EFFECTS
-    # -------------------------------------------------
-    e_grayscale: bool = False
-    e_contrast: bool = False
-    e_sharpen: Union[bool, int] = False
-    e_usm: Union[EUSM, bool] = False
-    e_shadow: Union[EShadow, bool] = False
-    e_gradient: Union[EGradient, bool] = False
-    e_distort: Union[EDistort, bool] = False
-
-    # -------------------------------------------------
     # NESTED OVERLAY (ONLY ONE)
     # -------------------------------------------------
     layer_mode: Optional[Literal["displace", "multiply", "cutout", "cutter"]] = None
     child: Optional["ImageOverlay"] = None
+
+    effects: Optional[Effects] = None
 
     def _resolve_layer_mode(self) -> Optional[ImageLayerMode]:
         if self.layer_mode is None:
@@ -262,49 +250,6 @@ class ImageOverlay(BaseModel):
             if attr in dumped:
                 transform[attr] = dumped[attr]
 
-        # effects
-        if dumped.get("e_grayscale"):
-            transform["e"] = "grayscale"
-
-        if dumped.get("e_contrast"):
-            transform["e"] = "contrast"
-
-        if isinstance(self.e_sharpen, int):
-            transform["e-sharpen"] = self.e_sharpen
-        elif dumped.get("e_sharpen") is True:
-            transform["e-sharpen"] = None
-
-        if isinstance(self.e_usm, EUSM):
-            transform["e-usm"] = (
-                f"{self.e_usm.radius}-{self.e_usm.sigma}-"
-                f"{self.e_usm.amount}-{self.e_usm.threshold}"
-            )
-
-        if isinstance(self.e_shadow, EShadow):
-            transform["e-shadow"] = (
-                f"{self.e_shadow.blur}-{self.e_shadow.saturation}-"
-                f"{self.e_shadow.x_offset}-{self.e_shadow.y_offset}"
-            )
-
-        if isinstance(self.e_gradient, EGradient):
-            transform["e-gradient"] = (
-                f"ld-{self.e_gradient.linear_direction}_"
-                f"from-{self.e_gradient.from_color}_"
-                f"to-{self.e_gradient.to_color}_"
-                f"sp-{self.e_gradient.stop_point}"
-            )
-
-        if isinstance(self.e_distort, EDistort):
-            if self.e_distort.type == "perspective":
-                transform["e-distort"] = (
-                    f"p-{dumped['e_distort']['x1']}_{dumped['e_distort']['y1']}_"
-                    f"{dumped['e_distort']['x2']}_{dumped['e_distort']['y2']}_"
-                    f"{dumped['e_distort']['x3']}_{dumped['e_distort']['y3']}_"
-                    f"{dumped['e_distort']['x4']}_{dumped['e_distort']['y4']}"
-                )
-            else:
-                transform["e-distort"] = f"a-{self.e_distort.arc_degree}"
-
         # -------------------------------------------------
         # NESTED OVERLAY
         # -------------------------------------------------
@@ -391,27 +336,13 @@ class ImageOverlayTransforms:
         lx: Optional[NumberOrExpression] = None,
         ly: Optional[NumberOrExpression] = None,
         lfo: Optional[str] = None,
-        bg: Optional[str] = None,
-        b: Optional[str] = None,
-        o: Optional[int] = None,
-        r: Optional[Union[int, str]] = None,
-        rt: Optional[int] = None,
-        fl: Optional[str] = None,
         q: Optional[int] = None,
-        bl: Optional[int] = None,
         dpr: Optional[Union[float, str]] = None,
-        t: Optional[Union[bool, int]] = None,
-        e_grayscale: bool = False,
-        e_contrast: bool = False,
-        e_sharpen: Union[bool, int] = False,
-        e_usm: Union[EUSM, bool] = False,
-        e_shadow: Union[EShadow, bool] = False,
-        e_gradient: Union[EGradient, bool] = False,
-        e_distort: Union[EDistort, bool] = False,
         layer_mode: Optional[
             Literal["displace", "multiply", "cutout", "cutter"]
         ] = None,
         child: Optional[dict] = None,
+        effects: Optional[Effects] = None,
     ) -> Dict[str, Any]:
         """
         Build and normalize an ImageKit **image overlay** into a single overlay

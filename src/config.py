@@ -1,6 +1,7 @@
 import os
 import logging
 import typesense
+import yaml
 from typesense import Client
 from openai import AsyncOpenAI
 from pathlib import Path
@@ -120,3 +121,4 @@ class IK_Transforms(Enum):
 
 
 TIMEOUT_IMAGE_GENERATIO_SECONDS = 120
+ARITHMETIC_EXPRESSION_FILE_PATH = "./static/arithmetic_expressions.yaml"

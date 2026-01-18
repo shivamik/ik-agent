@@ -1,7 +1,7 @@
-# TODO: use pydantic models
 import logging
-from typing import Dict, List, Optional, Literal, TypedDict, Any
+from typing import Dict, List, Optional, Literal, Any
 
+from pydantic import BaseModel, Field, model_validator
 from src.utils.utils import to_base64
 from src.config import LOG_LEVEL
 
@@ -10,29 +10,125 @@ logger.setLevel(LOG_LEVEL)
 
 
 # ------------------------------------------------------------------
-# Typed params (mirror of ResizeAndCropParams pattern)
+# Pydantic models
 # ------------------------------------------------------------------
 
 
-class AITransformParams(TypedDict, total=False):
-    ai_background_removal_external: bool
-    ai_remove_background: bool
-    ai_edit: bool
-    ai_changebg: bool
-    ai_bg_genfill: bool
-    ai_drop_shadow: bool
-    ai_retouch: bool
-    ai_upscale: bool
+class AITransformOptions(BaseModel):
+    """
+    Validated parameters for ImageKit AI transformations.
 
-    az: Optional[int]
-    el: Optional[int]
-    st: Optional[int]
-    prompt: Optional[str]
-    encoded: bool
+    Mirrors the AI capabilities exposed by the URL builder:
+    - Background operations (native and external)
+    - Prompt-based edits and background changes
+    - Generative fill
+    - Drop shadow, retouch, and upscale
+    """
 
-    height: int
-    width: int
-    crop_mode: Literal["pad_resize", "pad_extract"]
+    ai_background_removal_external: bool = False
+    ai_remove_background: bool = False
+    ai_edit: bool = False
+    ai_changebg: bool = False
+    ai_bg_genfill: bool = False
+    ai_drop_shadow: bool = False
+    ai_retouch: bool = False
+    ai_upscale: bool = False
+
+    az: Optional[int] = Field(215, ge=0)
+    el: Optional[int] = Field(45, ge=0)
+    st: Optional[int] = Field(60, ge=0)
+    prompt: Optional[str] = None
+    encoded: bool = False
+
+    height: Optional[int] = Field(None, gt=0)
+    width: Optional[int] = Field(None, gt=0)
+    crop_mode: Literal["pad_resize", "pad_extract"] = "pad_resize"
+
+    model_config = {"extra": "ignore"}
+
+    @model_validator(mode="after")
+    def validate_ai(self) -> "AITransformOptions":
+        """
+        Enforce prompt and dimension requirements and basic compatibility.
+        """
+        if self.ai_edit and not self.prompt:
+            raise ValueError("ai_edit requires a non-empty prompt")
+
+        if self.ai_changebg and not self.prompt:
+            raise ValueError("ai_changebg requires a non-empty prompt")
+
+        if self.ai_bg_genfill:
+            if self.height is None or self.width is None:
+                raise ValueError("ai_bg_genfill requires height and width")
+            if self.crop_mode != "pad_resize":
+                raise ValueError("ai_bg_genfill requires crop_mode='pad_resize'")
+
+        if self.ai_drop_shadow:
+            if self.az is not None and self.az < 0:
+                raise ValueError("az must be >= 0")
+            if self.el is not None and self.el < 0:
+                raise ValueError("el must be >= 0")
+            if self.st is not None and self.st < 0:
+                raise ValueError("st must be >= 0")
+
+        return self
+
+    def to_transform_dicts(self) -> List[Dict[str, Any]]:
+        """
+        Serialize validated AI options into ImageKit transformation dicts.
+        """
+        transforms: List[Dict[str, Any]] = []
+        dumped = self.model_dump()
+
+        if dumped["ai_retouch"]:
+            transforms.append({"e-retouch": True})
+
+        if dumped["ai_upscale"]:
+            transforms.append({"e-upscale": True})
+
+        if dumped["ai_background_removal_external"]:
+            transforms.append({"e-removedotbg": True})
+
+        if dumped["ai_remove_background"]:
+            transforms.append({"e-bgremove": True})
+
+        if dumped["ai_edit"]:
+            if dumped["encoded"]:
+                transforms.append({"e-edit-prompte": to_base64(dumped["prompt"] or "")})
+            else:
+                transforms.append({"e-edit-prompt": dumped["prompt"]})
+
+        if dumped["ai_changebg"]:
+            if dumped["encoded"]:
+                transforms.append({"e-changebg-prompte": to_base64(dumped["prompt"] or "")})
+            else:
+                transforms.append({"e-changebg-prompt": dumped["prompt"]})
+
+        if dumped["ai_bg_genfill"]:
+            genfill: Dict[str, Any] = {
+                "bg": "genfill",
+                "cm": dumped["crop_mode"],
+                "h": dumped["height"],
+                "w": dumped["width"],
+            }
+            transforms.append(genfill)
+
+        if dumped["ai_drop_shadow"]:
+            shadow: Dict[str, Any] = {"e-dropshadow": True}
+
+            if not dumped["ai_background_removal_external"] and not dumped["ai_remove_background"]:
+                transforms.append({"e-bgremove": True})
+
+            if dumped["az"] is not None:
+                shadow["az"] = dumped["az"]
+            if dumped["el"] is not None:
+                shadow["el"] = dumped["el"]
+            if dumped["st"] is not None:
+                shadow["st"] = dumped["st"]
+
+            transforms.append(shadow)
+
+        return transforms
 
 
 # ------------------------------------------------------------------
@@ -53,20 +149,15 @@ class AITransforms:
         Public wrapper.
         Filters known params and ignores unsupported ones.
         """
+        extras = {
+            k: v for k, v in params.items() if k not in AITransformOptions.model_fields
+        }
+        if extras:
+            logger.debug("Ignoring unsupported AI params: %s", extras)
 
-        known: AITransformParams = {}
-        extra: Dict[str, Any] = {}
-
-        for k, v in params.items():
-            if k in AITransformParams.__annotations__:
-                known[k] = v
-            else:
-                extra[k] = v
-
-        if extra:
-            logger.debug("Ignoring unsupported AI params: %s", extra)
-
-        return self._ai_transform_impl(**known)
+        return self._ai_transform_impl(
+            **{k: v for k, v in params.items() if k in AITransformOptions.model_fields}
+        )
 
     # ------------------------------------------------------------------
     # Core implementation (already written by you)
@@ -122,25 +213,21 @@ class AITransforms:
         ~~~~~~~~~~~~~~~~~~~~~~~
         ai_background_removal_external : bool
             Removes the background using an Removedotbg (external AI service).
-            Normalized as: `e-removedotbg`.
 
         ai_remove_background : bool
             Removes the background using ImageKit’s native AI.
-            Normalized as: `e-bgremove`.
 
         Image modification
         ~~~~~~~~~~~~~~~~~~
         ai_edit : bool
             Modifies an image using a text prompt.
             Requires `prompt`.
-            Normalized as:
             - `e-edit-prompt` (plain text)
             - `e-edit-prompte` (base64-encoded)
 
         ai_changebg : bool
             Changes the background using a text prompt.
             Requires `prompt`.
-            Normalized as:
             - `e-changebg-prompt`
             - `e-changebg-prompte`
 
@@ -151,7 +238,6 @@ class AITransforms:
             Optional:
             - `height`
             - `width`
-            Normalized as: `{ "bg": "genfill", "h": <height>, "w": <width>, "cm": "pad_resize" }`
 
         Visual effects
         ~~~~~~~~~~~~~~
@@ -162,17 +248,14 @@ class AITransforms:
             - az (azimuth angle, >= 0)
             - el (elevation angle, >= 0)
             - st (shadow strength, >= 0)
-            Normalized as: `e-dropshadow`.
 
         Enhancement
         ~~~~~~~~~~~
         ai_retouch : bool
             Improves visual quality by removing blemishes and artifacts.
-            Normalized as: `e-retouch`.
 
         ai_upscale : bool
             Increases image resolution using AI.
-            Normalized as: `e-upscale`.
 
         Common parameters
         -----------------
@@ -212,102 +295,23 @@ class AITransforms:
             - image generation parameters are incomplete
             - no AI transformation is specified
         """
+        options = AITransformOptions(
+            ai_background_removal_external=ai_background_removal_external,
+            ai_remove_background=ai_remove_background,
+            ai_edit=ai_edit,
+            ai_changebg=ai_changebg,
+            ai_bg_genfill=ai_bg_genfill,
+            ai_drop_shadow=ai_drop_shadow,
+            ai_retouch=ai_retouch,
+            ai_upscale=ai_upscale,
+            az=az,
+            el=el,
+            st=st,
+            prompt=prompt,
+            encoded=encoded,
+            height=height,
+            width=width,
+            crop_mode=crop_mode,
+        )
 
-        transforms: List[Dict[str, Any]] = []
-
-        # -------------------------------------------------
-        # Retouch
-        # -------------------------------------------------
-        if ai_retouch:
-            transforms.append({"e-retouch": True})
-
-        # -------------------------------------------------
-        # Upscale
-        # -------------------------------------------------
-        if ai_upscale:
-            transforms.append({"e-upscale": True})
-
-        # -------------------------------------------------
-        # Background removal (external)
-        # -------------------------------------------------
-        if ai_background_removal_external:
-            transforms.append({"e-removedotbg": True})
-
-        # -------------------------------------------------
-        # Background removal (ImageKit)
-        # -------------------------------------------------
-        if ai_remove_background:
-            transforms.append({"e-bgremove": True})
-
-        # -------------------------------------------------
-        # AI Edit
-        # -------------------------------------------------
-        if ai_edit:
-            if not prompt:
-                raise ValueError("ai_edit requires a non-empty prompt")
-
-            if encoded:
-                transforms.append({"e-edit-prompte": to_base64(prompt)})
-            else:
-                transforms.append({"e-edit-prompt": prompt})
-
-        # -------------------------------------------------
-        # Change background
-        # -------------------------------------------------
-        if ai_changebg:
-            if not prompt:
-                raise ValueError("ai_changebg requires a non-empty prompt")
-
-            if encoded:
-                transforms.append({"e-changebg-prompte": to_base64(prompt)})
-            else:
-                transforms.append({"e-changebg-prompt": prompt})
-
-        # -------------------------------------------------
-        # Background generative fill
-        # -------------------------------------------------
-        if ai_bg_genfill:
-            genfill: Dict[str, Any] = {"bg": "genfill"}
-            if height is None or width is None:
-                raise ValueError("ai_bg_genfill requires height and width")
-
-            if height is not None:
-                if height <= 0:
-                    raise ValueError("height must be > 0")
-                genfill["h"] = height
-
-            if width is not None:
-                if width <= 0:
-                    raise ValueError("width must be > 0")
-                genfill["w"] = width
-
-            genfill["cm"] = crop_mode
-            transforms.append(genfill)
-
-        # -------------------------------------------------
-        # Drop shadow
-        # -------------------------------------------------
-        if ai_drop_shadow:
-            shadow: Dict[str, Any] = {"e-dropshadow": True}
-
-            if not ai_background_removal_external and not ai_remove_background:
-                transforms.append({"e-bgremove": True})
-
-            if az is not None:
-                if az < 0:
-                    raise ValueError("az must be >= 0")
-                shadow["az"] = az
-
-            if el is not None:
-                if el < 0:
-                    raise ValueError("el must be >= 0")
-                shadow["el"] = el
-
-            if st is not None:
-                if st < 0:
-                    raise ValueError("st must be >= 0")
-                shadow["st"] = st
-
-            transforms.append(shadow)
-
-        return transforms
+        return options.to_transform_dicts()

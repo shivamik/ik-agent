@@ -57,14 +57,14 @@ class GradientEffect(BaseModel):
 
 
 class PerspectiveDistortEffect(BaseModel):
-    x1: NumberOrExpression
-    y1: NumberOrExpression
-    x2: NumberOrExpression
-    y2: NumberOrExpression
-    x3: NumberOrExpression
-    y3: NumberOrExpression
-    x4: NumberOrExpression
-    y4: NumberOrExpression
+    x1: Number
+    y1: Number
+    x2: Number
+    y2: Number
+    x3: Number
+    y3: Number
+    x4: Number
+    y4: Number
 
 
 class ArcDistortEffect(BaseModel):
