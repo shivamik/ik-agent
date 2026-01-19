@@ -658,7 +658,39 @@ class BlurredBackground(BaseModel):
 
 class GradientBackground(BaseModel):
     mode: Literal["dominant"] = "dominant"
-    pallete_size: set[int] = {2, 4}
+    pallete_size: Literal[2, 4] = 2
 
 
-BACKGROUND = Union[Literal["dominant"], Color, BlurredBackground, GradientBackground]
+BackgroundValue = Union[
+    Literal["dominant"],
+    Color,
+    BlurredBackground,
+    GradientBackground,
+]
+
+
+class Background(BaseModel):
+    background: BackgroundValue
+
+    @classmethod
+    def from_raw(cls, value: BackgroundValue) -> "Background":
+        return cls(background=value)
+
+    def to_ik_params(self) -> Optional[str]:
+        dumped = self.model_dump(exclude_none=True)
+        value: str
+        if "background" in dumped:
+            background_value = dumped["background"]
+            if isinstance(self.background, Color):
+                value = background_value
+            elif self.background == "dominant":
+                value = background_value
+            elif isinstance(self.background, BlurredBackground):
+                value = f"blurred_{self.background.blur_intensity}_{self.background.brightness}"
+                value = value
+            elif isinstance(self.background, GradientBackground):
+                value = (
+                    f"gradient_{self.background.mode}_{self.background.pallete_size}"
+                )
+            return value
+        raise ValueError("Invalid background value")

@@ -14,7 +14,8 @@ from src.modules.ik_transforms.types import (
     MultiplyMode,
     CutoutMode,
     CutterMode,
-    BACKGROUND,
+    Background,
+    BackgroundValue,
 )
 from src.modules.ik_transforms.transforms.effects_and_enhancement import Effects
 
@@ -111,7 +112,7 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     # APPEARANCE
     # -------------------------------------------------
-    background: Optional[BACKGROUND] = None
+    background: Optional[Union[BackgroundValue, Background]] = None
     quality: Optional[int] = None
     dpr: Optional[Union[float, str]] = None
     # -------------------------------------------------
@@ -156,9 +157,6 @@ class ImageOverlay(BaseModel):
                     "Solid color overlay requires width and height dimensions"
                 )
 
-            # if self.layer_x is None or self.layer_y is None:
-            #     raise ValueError("Solid color overlay requires layer_x and layer_y positioning")
-
             if self.background is None:
                 raise ValueError(
                     "Solid color overlay requires background (background color)"
@@ -187,7 +185,6 @@ class ImageOverlay(BaseModel):
         serialized correctlayer_y (e.g. negative numbers -> 'N{abs(x)}').
         """
         dumped = self.model_dump(exclude_none=True)
-
         overlay: Dict[str, Any] = {
             "type": "image",
             "input": dumped["image_path"],
@@ -256,15 +253,30 @@ class ImageOverlay(BaseModel):
         if "yc" in dumped:
             transform["yc"] = dumped["yc"]
         # background
-        # TODO: Handle gradient and other background types
+
         if "background" in dumped:
-            transform["background"] = dumped["background"]
+            bg = (
+                self.background
+                if isinstance(self.background, Background)
+                else Background.from_raw(self.background)
+            )
+            transform["background"] = bg.to_ik_params()
+
         # quality
         if "quality" in dumped:
             transform["quality"] = dumped["quality"]
         # dpr
         if "dpr" in dumped:
             transform["dpr"] = dumped["dpr"]
+
+        # -------------------------------------------------
+        # EFFECTS
+        # -------------------------------------------------
+        if self.effects is not None:
+            effects_transforms = self.effects.to_transform_dicts()
+            for effect in effects_transforms:
+                transform.update(effect)
+            # print("effects_transforms:", effects_transforms)
 
         # -------------------------------------------------
         # NESTED OVERLAY
@@ -280,8 +292,6 @@ class ImageOverlay(BaseModel):
 
         if transform:
             overlay["transformation"] = [transform]
-
-        # TODO: Handle effects
 
         return {"overlay": overlay}
 
@@ -445,47 +455,76 @@ class ImageOverlayTransforms:
         -------------------------------------------------------------------------
         APPEARANCE & OUTPUT TUNING
         -------------------------------------------------------------------------
-        bg:
-            Background color for padded areas.
-            Accepts hex, RGBA, or color names.
-
-        b:
-            Border specification.
-            Format: `"width_color"` (e.g. `"10_red"`).
-
-        o:
-            Opacity of the overlay image (0–100).
-
-        r:
-            Corner radius. Use `"max"` for circular/oval shapes.
-
-        rt:
-            Rotation in degrees.
-
-        fl:
-            Flip/mirror mode (horizontal, vertical, or both).
+        background:
+            - For Solid color, requires hex, RGBA hex or svg color name
+            - For dominant color background, use "dominant"
+            - For blurred background use
+                {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
+            - For Gradient background use
+                {"mode": "dominant", "pallete_size": Literal[2,4]=2}
 
         q:
             Output quality for lossy formats (1–100).
 
-        bl:
-            Gaussian blur radius (1–100).
-
         dpr:
             Device pixel ratio (`0.1–5` or `"auto"`).
             **Requires at least one of `w` or `h`.**
-
-        t:
-            Trim behavior.
-            - `True`: default trimming
-            - `False`: disable trimming
-            - `1–99`: trim threshold
 
         -------------------------------------------------------------------------
         EFFECTS (applied to the overlay image)
         -------------------------------------------------------------------------
         effects:
             Effects instance capturing enhancement and filter effects
+
+            effects: dict = {
+                "contrast": bool,
+                "grayscale": bool,
+                "sharpen": bool | int,
+                "unsharp_mask": {
+                    "radius": float,      # > 0
+                    "sigma": float,       # > 0
+                    "amount": float,      # > 0
+                    "threshold": float    # > 0
+                },
+                "shadow": true | {
+                    "blur": int,          # 0–15 (default: 10)
+                    "saturation": int,    # 0–100 (default: 30)
+                    "x_offset": number | expression,  # default: 2
+                    "y_offset": number | expression   # default: 2
+                },
+                "gradient": true | {
+                    "linear_direction": int | POSITION,   # 0–360 (default: 180)
+                    "from_color": Color,                  # default: "FFFFFF"
+                    "to_color": Color,                    # default: "00000000"
+                    "stop_point": float | expression      # default: 1
+                },
+                "perspective_distort": {
+                    "x1": number, "y1": number,
+                    "x2": number, "y2": number,
+                    "x3": number, "y3": number,
+                    "x4": number, "y4": number
+                },
+                "arc_distort": {
+                    "degrees": number
+                },
+                "color_replace": {
+                    "to_color": Color,
+                    "tolerance": int,      # 0–100 (default: 35)
+                    "from_color": Color | None
+                },
+                "border": {
+                    "border_width": number | expression,
+                    "color": Color
+                },
+                "blur": int,             # 1–100
+                "trim": true | int,
+                "rotate": number | expression | "auto",
+                "flip": "h" | "v" | "h_v",
+                "radius": number | expression | "max",
+                "background": Color | "dominant" | Background,
+                "opacity": int           # 0–100
+            }
+
 
         -------------------------------------------------------------------------
         NESTING

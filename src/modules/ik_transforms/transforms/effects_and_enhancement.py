@@ -18,9 +18,8 @@ from ..types import (
     Color,
     Number,
     FlipMode,
-    BACKGROUND,
-    BlurredBackground,
-    GradientBackground,
+    Background,
+    BackgroundValue,
 )
 
 # -------------------------------------------------------------------
@@ -107,7 +106,7 @@ class Effects(BaseModel):
     rotate: Optional[Union[NumberOrExpression, Literal["auto"]]] = None
     flip: Optional[FlipMode] = None
     radius: Optional[Union[NumberOrExpression, Literal["max"]]] = None
-    background: Optional[BACKGROUND] = None
+    background: Optional[Union[BackgroundValue, Background]] = None
     opacity: Optional[int] = Field(None, ge=0, le=100)
 
     # -------------------------------------------------
@@ -260,21 +259,12 @@ class Effects(BaseModel):
             transforms.append({"r": radius_params})
 
         if "background" in dumped:
-            # print("background", dumped["background"])
-            background_value = dumped["background"]
-            if isinstance(self.background, Color):
-                transforms.append({"bg": background_value})
-            elif self.background == "dominant":
-                transforms.append({"bg": background_value})
-            elif isinstance(self.background, BlurredBackground):
-                value = f"blurred_{self.background.blur_intensity}_{self.background.brightness}"
-                transforms.append({"bg": value})
-            elif isinstance(self.background, GradientBackground):
-                value = (
-                    f"gradient_{self.background.mode}_{self.background.pallete_size}"
-                )
-                transforms.append({"bg": background_value})
-            # transforms["bg"] =
+            bg = (
+                self.background
+                if isinstance(self.background, Background)
+                else Background.from_raw(self.background)
+            )
+            transforms.append({"background": bg.to_ik_params()})
 
         if "opacity" in dumped:
             transforms.append({"o": dumped["opacity"]})
