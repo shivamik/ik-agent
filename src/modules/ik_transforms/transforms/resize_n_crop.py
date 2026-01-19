@@ -1,5 +1,3 @@
-# TODO: use pydantic models
-# TODO: Add background type support
 """
 resize_and_crop_transforms.py
 
@@ -34,7 +32,7 @@ Crop behavior modifiers:
 - zoom (z)    [validated as positive; also blocked for crop='force']
 
 Positioning:
-- x, y, x_center, y_center  [only for cm in {"extract","pad_extract"}; absolute vs relative ex_centerlusive]
+- x, y, x_center, y_center  [only for cm in {"extract","pad_extract"}; absolute vs relative exclusive]
 
 Output density:
 - dpr
@@ -62,10 +60,18 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 """
 
 import logging
+from typing import Any, ClassVar, Dict, Optional, Union, Literal
 
-from typing import Dict, Optional, Union, Literal, TypedDict
-from src.utils.utils import get_transform_key, Any
-from src.config import LOG_LEVEL
+from pydantic import BaseModel, model_validator, field_validator
+
+from src.utils.utils import get_transform_key
+from src.config import LOG_LEVEL, COCO_CLASSES
+from src.modules.ik_transforms.types import (
+    BackgroundValue,
+    Background,
+    CROP_MODES,
+    CROP,
+)
 
 logger = logging.getLogger("transforms.resize_and_crop")
 logger.setLevel(LOG_LEVEL)
@@ -73,20 +79,205 @@ logger.setLevel(LOG_LEVEL)
 NumberOrExpression = Union[int, float, str]
 
 
-class ResizeAndCropParams(TypedDict, total=False):
-    width: NumberOrExpression
-    height: NumberOrExpression
-    aspect_ratio: str
-    crop: Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
-    crop_mode: Literal["pad_resize", "pad_extract", "extract"]
-    focus: str
-    zoom: NumberOrExpression
-    x: NumberOrExpression
-    y: NumberOrExpression
-    x_center: NumberOrExpression
-    y_center: NumberOrExpression
-    dpr: NumberOrExpression
-    background: str
+class ResizeAndCrop(BaseModel):
+    """
+    Pydantic model for ImageKit resize & crop parameters.
+
+    Use `.to_transform_dict()` to get the short-key dict consumed by the URL builder.
+    """
+
+    # -------------------------------------------------
+    # DIMENSIONS / CROP
+    # -------------------------------------------------
+    width: Optional[NumberOrExpression] = None
+    height: Optional[NumberOrExpression] = None
+    aspect_ratio: Optional[str] = None
+    crop: Optional[CROP] = "maintain_ratio"
+    crop_mode: Optional[CROP_MODES] = None
+
+    # -------------------------------------------------
+    # BEHAVIOR MODIFIERS
+    # -------------------------------------------------
+    focus: Optional[str] = None
+    zoom: Optional[NumberOrExpression] = None
+
+    # -------------------------------------------------
+    # POSITIONING
+    # -------------------------------------------------
+    x: Optional[NumberOrExpression] = None
+    y: Optional[NumberOrExpression] = None
+    x_center: Optional[NumberOrExpression] = None
+    y_center: Optional[NumberOrExpression] = None
+
+    # -------------------------------------------------
+    # OUTPUT DENSITY / BACKGROUND
+    # -------------------------------------------------
+    dpr: Optional[NumberOrExpression] = None
+    background: Optional[Union[BackgroundValue, Background]] = None
+
+    COCO_CLASSES: ClassVar = COCO_CLASSES
+    _PAD_RESIZE_FO: ClassVar[set[str]] = {"left", "right", "top", "bottom"}
+    _EXTRACT_RELATIVE_FO: ClassVar[set[str]] = {
+        "center",
+        "top",
+        "bottom",
+        "left",
+        "right",
+        "top_left",
+        "top_right",
+        "bottom_left",
+        "bottom_right",
+    }
+    _SPECIAL_FO: ClassVar[set[str]] = {"custom"}
+    _INTELLIGENT_FO: ClassVar[set[str]] = {"auto", "face"}
+
+    # -------------------------------------------------
+    # Field-level validation
+    # -------------------------------------------------
+    @field_validator("width", "height", "zoom", "dpr")
+    @classmethod
+    def validate_positive_numeric_or_expr(cls, v: Optional[NumberOrExpression], info):
+        if v is None:
+            return v
+
+        if isinstance(v, (int, float)):
+            if v <= 0:
+                raise ValueError(f"{info.field_name} must be > 0")
+            return v
+
+        if isinstance(v, str) and v.strip():
+            return v
+
+        raise ValueError(f"{info.field_name} must be a positive number or non-empty string")
+
+    @field_validator("aspect_ratio")
+    @classmethod
+    def validate_aspect_ratio(cls, v: Optional[str]):
+        if v is None:
+            return v
+
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("aspect_ratio must be a non-empty string")
+        return v.strip()
+
+    @field_validator("focus")
+    @classmethod
+    def validate_focus_string(cls, v: Optional[str]):
+        if v is None:
+            return v
+        if not isinstance(v, str) or not v.strip():
+            raise ValueError("focus (fo) must be a non-empty string")
+        return v.strip()
+
+    # -------------------------------------------------
+    # Semantic validation
+    # -------------------------------------------------
+    @model_validator(mode="after")
+    def validate_semantics(self) -> "ResizeAndCrop":
+        # Focus & zoom cannot be used with crop='force'
+        if self.crop == "force":
+            if self.focus is not None:
+                raise ValueError("focus (fo) cannot be used when crop='force'")
+            if self.zoom is not None:
+                raise ValueError("zoom (z) cannot be used when crop='force'")
+
+        # Positioning restrictions
+        if any(v is not None for v in (self.x, self.y, self.x_center, self.y_center)):
+            if self.crop_mode not in {"extract", "pad_extract"}:
+                raise ValueError(
+                    "x, y, x_center, y_center are only allowed with crop_mode='extract' or 'pad_extract'"
+                )
+
+            if (self.x is not None or self.y is not None) and (
+                self.x_center is not None or self.y_center is not None
+            ):
+                raise ValueError(
+                    "Cannot mix absolute offsets (x,y) with center offsets (x_center,y_center)"
+                )
+
+        # Focus validation (context-dependent)
+        if self.focus is not None:
+            allowed_focus = set()
+
+            if self.crop_mode == "pad_resize":
+                allowed_focus.update(self._PAD_RESIZE_FO)
+                allowed_focus.update(self._INTELLIGENT_FO)
+                allowed_focus.update(self.COCO_CLASSES)
+
+            if self.crop_mode in {"extract", "pad_extract"}:
+                allowed_focus.update(self._EXTRACT_RELATIVE_FO)
+                allowed_focus.update(self._SPECIAL_FO)
+                allowed_focus.update(self._INTELLIGENT_FO)
+                allowed_focus.update(self.COCO_CLASSES)
+
+            if self.crop == "maintain_ratio":
+                allowed_focus.update(self._SPECIAL_FO)
+                allowed_focus.update(self._INTELLIGENT_FO)
+                allowed_focus.update(self.COCO_CLASSES)
+
+            if not allowed_focus:
+                raise ValueError(
+                    "focus (fo) is only valid with crop_mode='pad_resize', crop='maintain_ratio', "
+                    "or crop_mode in {'extract','pad_extract'}"
+                )
+
+            if self.focus not in allowed_focus:
+                raise ValueError(f"Invalid focus (fo) value: {self.focus!r}")
+
+        return self
+
+    # -------------------------------------------------
+    # Normalization
+    # -------------------------------------------------
+    def to_transform_dict(self) -> Dict[str, Any]:
+        dumped = self.model_dump(exclude_none=True)
+        transforms: Dict[str, Any] = {}
+
+        if "width" in dumped:
+            transforms[get_transform_key("w")] = str(dumped["width"])
+
+        if "height" in dumped:
+            transforms[get_transform_key("h")] = str(dumped["height"])
+
+        if "aspect_ratio" in dumped:
+            transforms[get_transform_key("ar")] = dumped["aspect_ratio"]
+
+        if "crop" in dumped:
+            transforms[get_transform_key("c")] = dumped["crop"]
+
+        if "crop_mode" in dumped:
+            transforms[get_transform_key("cm")] = dumped["crop_mode"]
+
+        if "focus" in dumped:
+            transforms[get_transform_key("fo")] = dumped["focus"]
+
+        if "zoom" in dumped:
+            transforms[get_transform_key("z")] = str(dumped["zoom"])
+
+        if "x" in dumped:
+            transforms[get_transform_key("x")] = str(dumped["x"])
+
+        if "y" in dumped:
+            transforms[get_transform_key("y")] = str(dumped["y"])
+
+        if "x_center" in dumped:
+            transforms[get_transform_key("x_center")] = str(dumped["x_center"])
+
+        if "y_center" in dumped:
+            transforms[get_transform_key("y_center")] = str(dumped["y_center"])
+
+        if "dpr" in dumped:
+            transforms[get_transform_key("dpr")] = str(dumped["dpr"])
+
+        if "background" in dumped:
+            background = (
+                self.background
+                if isinstance(self.background, Background)
+                else Background.from_raw(self.background)
+            )
+            transforms["background"] = background.to_ik_params()
+
+        return transforms
 
 
 class ResizeAndCropTransforms:
@@ -100,122 +291,13 @@ class ResizeAndCropTransforms:
         w, h, ar, c, cm, fo, z, x, y, x_center, y_center, dpr
     """
 
-    # --- Enums from the resize/crop domain ---
-    CROP_MODES = {"pad_resize", "pad_extract", "extract"}
-    CROPS = {"force", "at_max_enlarge", "at_least", "maintain_ratio"}
-
-    # --- COCO object classes (80) allowed for intelligent focus in `fo` ---
-    COCO_CLASSES = {
-        "person",
-        "bicy_centerle",
-        "car",
-        "motorcy_centerle",
-        "airplane",
-        "bus",
-        "train",
-        "truck",
-        "boat",
-        "traffic_light",
-        "fire_hydrant",
-        "stop_sign",
-        "parking_meter",
-        "bench",
-        "bird",
-        "cat",
-        "dog",
-        "horse",
-        "sheep",
-        "cow",
-        "elephant",
-        "bear",
-        "zebra",
-        "giraffe",
-        "backpack",
-        "umbrella",
-        "handbag",
-        "tie",
-        "suitcase",
-        "frisbee",
-        "skis",
-        "snowboard",
-        "sports_ball",
-        "kite",
-        "baseball_bat",
-        "baseball_glove",
-        "skateboard",
-        "surfboard",
-        "tennis_racket",
-        "bottle",
-        "wine_glass",
-        "cup",
-        "fork",
-        "knife",
-        "spoon",
-        "bowl",
-        "banana",
-        "apple",
-        "sandwich",
-        "orange",
-        "broccoli",
-        "carrot",
-        "hot_dog",
-        "pizza",
-        "donut",
-        "cake",
-        "chair",
-        "couch",
-        "potted_plant",
-        "bed",
-        "dining_table",
-        "toilet",
-        "tv",
-        "laptop",
-        "mouse",
-        "remote",
-        "keyboard",
-        "cell_phone",
-        "microwave",
-        "oven",
-        "toaster",
-        "sink",
-        "refrigerator",
-        "book",
-        "clock",
-        "vase",
-        "scissors",
-        "teddy_bear",
-        "hair_drier",
-        "toothbrush",
-    }
-
-    # --- Focus buckets (context-dependent) ---
-    _PAD_RESIZE_FO = {"left", "right", "top", "bottom"}  # padding position control
-    _EXTRACT_RELATIVE_FO = {
-        "center",
-        "top",
-        "bottom",
-        "left",
-        "right",
-        "top_left",
-        "top_right",
-        "bottom_left",
-        "bottom_right",
-    }  # relative crop anchor
-    _SPECIAL_FO = {"custom"}  # custom focus region
-    _INTELLIGENT_FO = {"auto", "face"}  # plus COCO_CLASSES
-
     def resize_and_crop(
         self,
         **params: Any,
     ) -> Dict[str, str]:
-        known: ResizeAndCropParams = {}
-        extra: Dict[str, Any] = {}
-
-        for k, v in params.items():
-            if k in ResizeAndCropParams.__annotations__:
-                known[k] = v
-            else:
-                extra[k] = v
+        known_fields = set(ResizeAndCrop.model_fields.keys())
+        known = {k: v for k, v in params.items() if k in known_fields}
+        extra = {k: v for k, v in params.items() if k not in known_fields}
 
         if extra:
             logger.debug("Ignoring unsupported params: %s", extra)
@@ -228,9 +310,7 @@ class ResizeAndCropTransforms:
         width: Optional[NumberOrExpression] = None,
         height: Optional[NumberOrExpression] = None,
         aspect_ratio: Optional[str] = None,
-        crop: Optional[
-            Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
-        ] = "maintain_ratio",
+        crop: Optional[Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]] = "maintain_ratio",
         crop_mode: Optional[Literal["pad_resize", "pad_extract", "extract"]] = None,
         focus: Optional[str] = None,
         zoom: Optional[NumberOrExpression] = None,
@@ -239,7 +319,7 @@ class ResizeAndCropTransforms:
         x_center: Optional[NumberOrExpression] = None,
         y_center: Optional[NumberOrExpression] = None,
         dpr: Optional[NumberOrExpression] = None,
-        background: Optional[str] = None,
+        background: Optional[Union[BackgroundValue, Background]] = None,
         **kwargs,
     ) -> Dict[str, str]:
         """
@@ -268,26 +348,11 @@ class ResizeAndCropTransforms:
             Crop mode controlling padding/extraction.
             - Coordinates (x,y,x_center,y_center) are ONLY allowed with crop_mode in {"extract","pad_extract"}.
 
-        background: str, optional
-            Background color for padding (hex without #, e.g. "FFFFFF" for white).
+        background: str or Background, optional
+            Background color/value for padding.
 
         focus : str, optional
-            Focus parameter `fo` with context-sensitive values:
-
-            Allowed depending on usage:
-            - With crop_mode='pad_resize':
-                left, right, top, bottom  (padding position control)
-                auto, face, or any COCO class
-            - With crop_mode in {'extract','pad_extract'}:
-                center/top/left/bottom/right/top_left/top_right/bottom_left/bottom_right
-                custom
-                auto, face, or any COCO class
-            - With crop='maintain_ratio':
-                custom
-                auto, face, or any COCO class
-
-            Forbidden:
-            - If crop='force', focus is not allowed.
+            Focus parameter `fo` with context-sensitive values.
 
         zoom : int | float | str, optional
             Zoom factor `z`. Must be > 0 when numeric.
@@ -317,181 +382,23 @@ class ResizeAndCropTransforms:
             If parameters are invalid or in conflict.
         """
 
-        transforms: Dict[str, str] = {}
+        if kwargs:
+            logger.debug("Ignoring unsupported params: %s", kwargs)
 
-        # --- Basic sizing ---
-        if width is not None:
-            self._validate_dimension("width", width)
-            transforms[get_transform_key("w")] = str(width)
-
-        if height is not None:
-            self._validate_dimension("height", height)
-            transforms[get_transform_key("h")] = str(height)
-
-        if aspect_ratio is not None:
-            self._validate_non_empty_str("aspect_ratio", aspect_ratio)
-            transforms[get_transform_key("ar")] = aspect_ratio
-
-        # --- Crop & crop_mode enums ---
-        if crop is not None:
-            self._validate_enum("crop", crop, self.CROPS)
-            transforms[get_transform_key("c")] = crop
-
-        if crop_mode is not None:
-            self._validate_enum("crop_mode", crop_mode, self.CROP_MODES)
-            transforms[get_transform_key("cm")] = crop_mode
-
-        # --- Focus & zoom restrictions with crop='force' ---
-        if crop == "force":
-            if focus is not None:
-                raise ValueError("focus (fo) cannot be used when crop='force'")
-            if zoom is not None:
-                raise ValueError("zoom (z) cannot be used when crop='force'")
-
-        # --- Focus validation (context-sensitive) ---
-        if focus is not None:
-            self._validate_focus(fo=focus, crop=crop, crop_mode=crop_mode)
-            transforms[get_transform_key("fo")] = focus
-
-        # --- Zoom validation ---
-        if zoom is not None:
-            self._validate_positive("zoom", zoom)
-            transforms[get_transform_key("z")] = str(zoom)
-
-        if background is not None:
-            background = background.replace("#", "")
-            transforms["background"] = str(background)
-
-        # --- Positioning offsets (only for extract/pad_extract) ---
-        if any(v is not None for v in (x, y, x_center, y_center)):
-            if crop_mode not in {"extract", "pad_extract"}:
-                raise ValueError(
-                    "x, y, x_center, y_center are only allowed with crop_mode='extract' or 'pad_extract'"
-                )
-
-            # Prevent mixing absolute and center offsets
-            if (x is not None or y is not None) and (
-                x_center is not None or y_center is not None
-            ):
-                raise ValueError(
-                    "Cannot mix absolute offsets (x,y) with center offsets (x_center,y_center)"
-                )
-
-            if x is not None:
-                transforms[get_transform_key("x")] = str(x)
-            if y is not None:
-                transforms[get_transform_key("y")] = str(y)
-            if x_center is not None:
-                transforms[get_transform_key("x_center")] = str(x_center)
-            if y_center is not None:
-                transforms[get_transform_key("y_center")] = str(y_center)
-
-        # --- DPR validation ---
-        if dpr is not None:
-            self._validate_positive("dpr", dpr)
-            transforms[get_transform_key("dpr")] = str(dpr)
-
-        return transforms
-
-    # ------------------------------------------------------------------
-    # Validators
-    # ------------------------------------------------------------------
-
-    def _validate_enum(self, name: str, value: str, allowed: set[str]) -> None:
-        if value not in allowed:
-            raise ValueError(
-                f"{name} must be one of {sorted(allowed)} (got: {value!r})"
-            )
-
-    def _validate_non_empty_str(self, name: str, value: str) -> None:
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError(f"{name} must be a non-empty string")
-
-    def _validate_dimension(self, name: str, value: NumberOrExpression) -> None:
-        """
-        Width/height accept:
-        - numeric > 0
-        - non-empty string (e.g., 'auto', arithmetic expressions)
-        """
-        if isinstance(value, (int, float)):
-            if value <= 0:
-                raise ValueError(f"{name} must be > 0 (got: {value})")
-            return
-        if isinstance(value, str) and value.strip():
-            return
-        raise ValueError(
-            f"{name} must be a positive number or a non-empty string (got: {value!r})"
+        model = ResizeAndCrop(
+            width=width,
+            height=height,
+            aspect_ratio=aspect_ratio,
+            crop=crop,
+            crop_mode=crop_mode,
+            focus=focus,
+            zoom=zoom,
+            x=x,
+            y=y,
+            x_center=x_center,
+            y_center=y_center,
+            dpr=dpr,
+            background=background,
         )
 
-    def _validate_positive(self, name: str, value: NumberOrExpression) -> None:
-        """
-        Accept:
-        - numeric > 0
-        - non-empty string (e.g., arithmetic expressions)
-        """
-        if isinstance(value, (int, float)):
-            if value <= 0:
-                raise ValueError(f"{name} must be > 0 (got: {value})")
-            return
-        if isinstance(value, str) and value.strip():
-            return
-        raise ValueError(
-            f"{name} must be a positive number or a non-empty string (got: {value!r})"
-        )
-
-    def _validate_focus(
-        self, *, fo: str, crop: Optional[str], crop_mode: Optional[str]
-    ) -> None:
-        """
-        Validate `fo` (focus) with context-sensitive rules.
-
-        Rules (as provided by user / ImageKit docs):
-
-        - `fo` can be used along with:
-            * pad_resize (crop_mode='pad_resize')
-            * maintain_ratio (crop='maintain_ratio')
-            * extract crop (crop_mode='extract' or 'pad_extract')
-
-        - Allowed values depend on usage:
-            * With pad_resize: left/right/top/bottom control padding position.
-            * With maintain_ratio & extract: custom defines a specific focus area.
-            * With extract: center/top/left/bottom/right/top_left/... define relative cropping anchor.
-            * Additionally: intelligent focus values: auto, face, and COCO classes.
-        """
-
-        if not isinstance(fo, str) or not fo.strip():
-            raise ValueError("focus (fo) must be a non-empty string")
-
-        fo = fo.strip()
-
-        # High-level compatibility: must belong to at least one supported context
-        compatible = (
-            (crop_mode == "pad_resize")
-            or (crop == "maintain_ratio")
-            or (crop_mode in {"extract", "pad_extract"})
-        )
-        if not compatible:
-            raise ValueError(
-                "focus (fo) is only valid with crop_mode='pad_resize', "
-                "crop='maintain_ratio', or crop_mode in {'extract','pad_extract'}"
-            )
-
-        # Custom focus region (only for maintain_ratio or extract/pad_extract)
-        if fo in self._SPECIAL_FO:
-            if not (
-                crop == "maintain_ratio" or crop_mode in {"extract", "pad_extract"}
-            ):
-                raise ValueError(
-                    "custom is only valid with crop='maintain_ratio' or extract crop modes"
-                )
-            return
-
-        # Intelligent focus: auto/face or COCO classes
-        if (
-            fo in self._INTELLIGENT_FO
-            or fo in self.COCO_CLASSES
-            or fo in self._EXTRACT_RELATIVE_FO
-        ):
-            return
-
-        raise ValueError(f"Invalid focus (fo) value: {fo!r}")
+        return model.to_transform_dict()

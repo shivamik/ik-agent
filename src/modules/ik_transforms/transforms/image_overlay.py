@@ -8,14 +8,14 @@ from pydantic import BaseModel, model_validator
 
 from src.config import LOG_LEVEL
 from src.modules.ik_transforms.types import (
-    NumberOrExpression,
     ImageLayerMode,
+    BackgroundValue,
+    NumberOrExpression,
     DisplacementMode,
     MultiplyMode,
     CutoutMode,
     CutterMode,
     Background,
-    BackgroundValue,
 )
 from src.modules.ik_transforms.transforms.effects_and_enhancement import Effects
 
@@ -459,9 +459,9 @@ class ImageOverlayTransforms:
             - For Solid color, requires hex, RGBA hex or svg color name
             - For dominant color background, use "dominant"
             - For blurred background use
-                {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
+                background: {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
             - For Gradient background use
-                {"mode": "dominant", "pallete_size": Literal[2,4]=2}
+                background: {"mode": "dominant", "pallete_size": Literal[2,4]=2}
 
         q:
             Output quality for lossy formats (1–100).

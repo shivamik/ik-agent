@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional, Literal
+from typing import Any, Dict, Optional, Literal, Union
 
 from pydantic import BaseModel, field_validator
 
@@ -10,6 +10,7 @@ from src.modules.ik_transforms.types import (
     FlipMode,
     TextLayerMode,
     InnerAlignment,
+    BackgroundValue,
     NumberOrExpression,
     PaddingValue,
     AlphaLevel,
@@ -17,6 +18,7 @@ from src.modules.ik_transforms.types import (
     CutterMode,
     MultiplyMode,
     Background,
+    Color,
 )
 from src.utils.tool_utils import list_assets
 
@@ -31,7 +33,7 @@ class TextOverlay(BaseModel):
     width: Optional[NumberOrExpression] = None
     font_size: Optional[NumberOrExpression] = None
     font_family: Optional[str] = None
-    color: Optional[str] = None
+    color: Optional[Color] = None
     inner_alignment: Optional[InnerAlignment] = None
     padding: Optional[PaddingValue] = None
     alpha: Optional[AlphaLevel] = None
@@ -46,7 +48,7 @@ class TextOverlay(BaseModel):
             "b_i_strikethrough",
         ]
     ] = None
-    background: Optional[Background] = None
+    background: Optional[Union[BackgroundValue, Background]] = None
     corner_radius: Optional[NumberOrExpression] = None
     rotation: Optional[NumberOrExpression] = None
     flip: Optional[FlipMode] = None
@@ -153,7 +155,12 @@ class TextOverlay(BaseModel):
             transform["padding"] = dumped["padding"]
 
         if "background" in dumped:
-            transform["background"] = dumped["background"]
+            bg = (
+                self.background
+                if isinstance(self.background, Background)
+                else Background.from_raw(self.background)
+            )
+            transform["background"] = bg.to_ik_params()
 
         if "corner_radius" in dumped:
             transform["radius"] = dumped["corner_radius"]
@@ -323,10 +330,13 @@ class TextOverlayTransforms:
             (e.g. `"b_i"`, `"b_i_strikethrough"`)
 
         background : str, optional
-            Background color behind the text.
-
-            Uses the same color formats as `color`.
-            If an 8-character RGBA value is used, the last two digits control opacity.
+            background:
+            - For Solid color, requires hex, RGBA hex or svg color name
+            - For dominant color background, use "dominant"
+            - For blurred background use
+                background: {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
+            - For Gradient background use
+                background: {"mode": "dominant", "pallete_size": Literal[2,4]=2}
 
         corner_radius : NumberOrExpression, optional
             Corner radius for the text background box.

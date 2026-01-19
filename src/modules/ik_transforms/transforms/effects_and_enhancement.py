@@ -38,8 +38,8 @@ class ShadowEffect(BaseModel):
     # e-shadow-<blur>_<saturation>_<x-offset>_<y-offset>
     blur: int = Field(10, ge=0, le=15)
     saturation: int = Field(30, ge=0, le=100)
-    x_offset: NumberOrExpression = 2
-    y_offset: NumberOrExpression = 2
+    x_offset: int = Field(2, ge=-100, le=100)
+    y_offset: int = Field(2, ge=-100, le=100)
 
 
 class GradientEffect(BaseModel):

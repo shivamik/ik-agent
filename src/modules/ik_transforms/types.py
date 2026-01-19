@@ -31,6 +31,10 @@ FlipMode = Literal["h", "v", "h_v"]
 # Radius
 RadiusValue = Union[int, Literal["max"]]
 
+# CROP MODES
+CROP_MODES = Literal["pad_resize", "pad_extract", "extract"]
+CROP = Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
+
 ALLOWED_VARS = "ih|iw|iar|idu|ch|cw|car|bh|bw|bar|bdu"
 OPS = "add|sub|mul|div|mod|pow"
 
