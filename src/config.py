@@ -118,6 +118,7 @@ class IK_Transforms(Enum):
     AI_TRANSFORM = "ai_transform"
     IMAGE_OVERLAY = "image_overlay"
     TEXT_OVERLAY = "text_overlay"
+    EFFECTS_AND_ENHANCEMENT = "effects_and_enhancement"
 
 
 TIMEOUT_IMAGE_GENERATIO_SECONDS = 120

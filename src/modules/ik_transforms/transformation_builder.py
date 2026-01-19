@@ -47,6 +47,7 @@ from .transforms.resize_n_crop import ResizeAndCropTransforms
 from .transforms.ai_transforms import AITransforms
 from .transforms.image_overlay import ImageOverlayTransforms
 from .transforms.text_overlay import TextOverlayTransforms
+from .transforms.effects_and_enhancement import EffectsAndEnhancementTransforms
 
 with open(IK_TRANSFORMS_METHOD_CAPABILITIES_PATH, "r") as f:
     method_n_capabilities = yaml.safe_load(f)
@@ -66,6 +67,7 @@ VALID_METHODS_DOCS_STRINGS = {
     "ai_transforms": AITransforms._ai_transform_impl.__doc__,
     "image_overlay": ImageOverlayTransforms._image_overlay_impl.__doc__,
     "text_overlay": TextOverlayTransforms._text_overlay_impl.__doc__,
+    "effects_and_enhancement": EffectsAndEnhancementTransforms._effects_and_enhancement_impl.__doc__,
 }
 
 # ---------------------------------------------------------------------
@@ -324,6 +326,8 @@ def parse_params(
         return ImageOverlayTransforms().image_overlay(**params)
     elif method == IK_Transforms.TEXT_OVERLAY.value:
         return TextOverlayTransforms().text_overlay(**params)
+    elif method == IK_Transforms.EFFECTS_AND_ENHANCEMENT.value:
+        return EffectsAndEnhancementTransforms().effects_and_enhancement(**params)
     return params
 
 

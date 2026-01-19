@@ -9,6 +9,7 @@ This module:
 - Does NOT build URLs
 """
 
+import logging
 from typing import Optional, Dict, Any, Literal, List, Union
 from pydantic import BaseModel, Field, model_validator, field_validator
 
@@ -21,6 +22,12 @@ from ..types import (
     Background,
     BackgroundValue,
 )
+
+from src.config import LOG_LEVEL
+
+logger = logging.getLogger("transforms.effects_and_enhancement")
+logger.setLevel(LOG_LEVEL)
+
 
 class UnsharpMaskEffect(BaseModel):
     """Sharpening kernel parameters for `e-unsharp_mask`."""
@@ -284,3 +291,314 @@ class Effects(BaseModel):
             transforms.append({"o": dumped["opacity"]})
 
         return transforms
+
+
+class EffectsAndEnhancementTransforms:
+    """
+    Wrapper around `Effects` to normalize parameters and emit the list of
+    transformation dicts expected by the ImageKit URL builder.
+
+    Public API:
+        effects_and_enhancement(**params) -> List[Dict[str, Any]]
+    """
+
+    def effects_and_enhancement(self, **params: Any) -> List[Dict[str, Any]]:
+        """
+        Public entry point. Filters unsupported params and forwards the rest to
+        `_effects_and_enhancement_impl`. Unknown keys are logged (debug) and
+        ignored so callers can pass broader dictionaries without failing.
+        """
+        known_keys = Effects.model_fields.keys()
+        known: dict[str, Any] = {}
+        extra: dict[str, Any] = {}
+
+        for k, v in params.items():
+            if k in known_keys:
+                known[k] = v
+            else:
+                extra[k] = v
+
+        if extra:
+            logger.debug("Ignoring unsupported effects params: %s", extra)
+
+        return self._effects_and_enhancement_impl(**known)
+
+    def _effects_and_enhancement_impl(
+        self,
+        contrast: Optional[bool] = None,
+        sharpen: Optional[Union[bool, int]] = None,
+        grayscale: Optional[bool] = None,
+        unsharp_mask: Optional[Union[UnsharpMaskEffect, Dict[str, Any]]] = None,
+        shadow: Optional[Union[bool, ShadowEffect, Dict[str, Any]]] = None,
+        gradient: Optional[Union[bool, GradientEffect, Dict[str, Any]]] = None,
+        perspective_distort: Optional[
+            Union[PerspectiveDistortEffect, Dict[str, Any]]
+        ] = None,
+        arc_distort: Optional[Union[ArcDistortEffect, Dict[str, Any]]] = None,
+        color_replace: Optional[Union[ColorReplaceEffect, Dict[str, Any]]] = None,
+        border: Optional[Union[BorderEffect, Dict[str, Any]]] = None,
+        blur: Optional[int] = None,
+        trim: Optional[Union[Literal[True], int]] = None,
+        rotate: Optional[Union[NumberOrExpression, Literal["auto"]]] = None,
+        flip: Optional[FlipMode] = None,
+        radius: Optional[Union[NumberOrExpression, Literal["max"]]] = None,
+        background: Optional[Union[BackgroundValue, Background]] = None,
+        opacity: Optional[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Build and validate **effects & enhancement transformations** for ImageKit.
+
+        Schema:
+            image_path?:str
+            encoded?:bool
+            width?,height?,aspect_ratio?:num|expr
+            crop?:"force"|"at_max"|"at_least"
+            crop_mode?:"extract"|"pad_resize"
+            focus?:
+                "face"|"center"|"top"|"bottom"|
+                "left"|"right"|
+                "top_left"|"top_right"|
+                "bottom_left"|"bottom_right"
+            zoom?:float
+            x?,y?,xc?,yc?:num|expr
+            layer_x?,layer_y?:num|expr
+            layer_focus?:
+                "center"|"top"|"bottom"|"left"|"right"|
+                "top_left"|"top_right"|
+                "bottom_left"|"bottom_right"
+            background?:BackgroundValue|Background
+            quality?:int
+            dpr?:float|str
+            layer_mode?:"displace"|"multiply"|"cutout"|"cutter"
+            child?:ImageOverlay
+            effects?:Effects
+
+        This method accepts a validated subset of ImageKit-supported visual effects,
+        normalizes them, and emits a **list of transformation dictionaries** that can
+        be serialized into an ImageKit URL.
+
+        Key characteristics:
+        - Validation is handled by the `Effects` Pydantic model
+        - Unknown parameters are ignored by the public wrapper
+        - Output order matches ImageKit execution semantics
+        - This method does NOT construct URLs
+
+        Supported categories:
+        - Image enhancement (contrast, sharpen, unsharp mask)
+        - Color & tone manipulation
+        - Blur, trim, border, and geometry transforms
+        - Shadows, gradients, and distortion effects
+        - Orientation and masking utilities
+
+        Parameters
+        ----------
+        contrast : bool, optional
+            Enables automatic contrast enhancement.
+
+            Behavior:
+            - When `True`, applies ImageKit's global contrast stretch
+            - No tunable parameters
+            - Can be chained with other effects
+
+        sharpen : bool | int, optional
+            Applies basic sharpening.
+
+            Accepted forms:
+            - `True` → default sharpen
+            - Integer ≥ 0 → sharpen strength
+
+            Notes:
+            - Less precise than `unsharp_mask`
+            - Excessive values may introduce artifacts
+
+        grayscale : bool, optional
+            Converts the image to grayscale.
+
+            Behavior:
+            - Fully removes color information
+            - No configuration options
+
+        unsharp_mask : UnsharpMaskEffect | dict, optional
+            Applies advanced unsharp masking for high-quality sharpening.
+
+            Required parameters:
+            - `radius`   : positive float
+            - `sigma`    : positive float
+            - `amount`   : positive float
+            - `threshold`: positive float
+
+            Notes:
+            - More computationally expensive than `sharpen`
+            - All parameters must be provided together
+
+        shadow : bool | ShadowEffect | dict, optional
+            Adds a drop shadow beneath non-transparent pixels.
+
+            Accepted forms:
+            - `True` → default shadow
+            - Configurable parameters:
+                - `blur`        : 0–15
+                - `saturation`  : 0–100
+                - `x_offset`    : -100 to 100 (% of width)
+                - `y_offset`    : -100 to 100 (% of height)
+
+            Constraints:
+            - Works only on images ≤ 2MP
+            - Requires transparency to be visually meaningful
+            - Negative offsets are supported
+
+        gradient : bool | GradientEffect | dict, optional
+            Applies a linear gradient overlay.
+
+            Parameters:
+            - `linear_direction` : angle (0–360) or positional keyword
+            - `from_color`       : SVG color, RGB hex, or RGBA hex
+            - `to_color`         : SVG color, RGB hex, or RGBA hex
+            - `stop_point`       : float, pixel value, or arithmetic expression
+
+            Defaults:
+            - Direction: bottom (180)
+            - From: white
+            - To: transparent black
+
+        perspective_distort : PerspectiveDistortEffect | dict, optional
+            Applies perspective warp using 4 corner coordinates.
+
+            Requirements:
+            - All 8 values (`x1`–`y4`) are required
+            - Coordinates are specified clockwise from top-left
+            - Arithmetic expressions are not supported
+
+        arc_distort : ArcDistortEffect | dict, optional
+            Applies arc distortion to curve the image.
+
+            Parameters:
+            - `degrees`: positive or negative number
+
+            Notes:
+            - Negative values curve upward
+            - Positive values curve downward
+
+        color_replace : ColorReplaceEffect | dict, optional
+            Replaces a source color and its similar shades.
+
+            Parameters:
+            - `to_color`   : required
+            - `tolerance`  : 0–100 (default 35)
+            - `from_color` : optional (auto-detected if omitted)
+
+            Notes:
+            - Best suited for saturated colors
+            - High tolerance may affect unintended regions
+
+        border : BorderEffect | dict, optional
+            Adds a border around the image.
+
+            Parameters:
+            - `border_width` : number or arithmetic expression
+            - `color`        : SVG color or hex
+
+            Notes:
+            - Border width is evaluated before rendering
+            - Color alpha is not supported directly
+
+        blur : int, optional
+            Applies Gaussian blur.
+
+            Constraints:
+            - Integer values only
+            - Range: 1–100
+            - Higher values significantly increase blur radius
+
+        trim : True | int, optional
+            Trims solid or near-solid background pixels.
+
+            Accepted forms:
+            - `True` → default trim
+            - Integer `1–99` → trim threshold
+
+            Notes:
+            - Best suited for uniform backgrounds
+            - Higher values trim more aggressively
+
+        rotate : NumberOrExpression | "auto", optional
+            Rotates the image.
+
+            Accepted forms:
+            - Degrees (positive or negative)
+            - `"auto"` → EXIF-based rotation
+            - Arithmetic expressions
+
+            Notes:
+            - Rotation occurs after resizing
+
+        flip : FlipMode, optional
+            Mirrors the image.
+
+            Supported values:
+            - `"h"`   → horizontal
+            - `"v"`   → vertical
+            - `"h_v"` → both directions
+
+        radius : NumberOrExpression | "max", optional
+            Rounds image corners.
+
+            Accepted forms:
+            - Positive number
+            - Arithmetic expression
+            - `"max"` → fully circular mask
+
+            Notes:
+            - Applied after resizing
+            - Must be chained after crop operations
+
+        background:
+            - For Solid color, requires hex, RGBA hex or svg color name
+            - For dominant color background, use "dominant"
+            - For blurred background use
+                background: {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
+            - For Gradient background use
+                background: {"mode": "dominant", "pallete_size": Literal[2,4]=2}
+
+        opacity : int, optional
+            Sets overall image opacity.
+
+            Constraints:
+            - Integer `0–100`
+            - Applied uniformly across the image
+
+        Returns
+        -------
+        List[Dict[str, Any]]
+            A list of normalized ImageKit transformation dictionaries,
+            ordered and formatted for direct consumption by the URL builder.
+
+            Example:
+            [
+                {"e": "contrast"},
+                {"e-shadow": "bl-10_st-30_x-2_y-2"},
+                {"r": 20}
+            ]
+
+        """
+        effects = Effects(
+            contrast=contrast,
+            sharpen=sharpen,
+            grayscale=grayscale,
+            unsharp_mask=unsharp_mask,
+            shadow=shadow,
+            gradient=gradient,
+            perspective_distort=perspective_distort,
+            arc_distort=arc_distort,
+            color_replace=color_replace,
+            border=border,
+            blur=blur,
+            trim=trim,
+            rotate=rotate,
+            flip=flip,
+            radius=radius,
+            background=background,
+            opacity=opacity,
+        )
+
+        return effects.to_transform_dicts()
