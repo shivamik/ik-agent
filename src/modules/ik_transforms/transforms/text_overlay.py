@@ -5,16 +5,18 @@ from pydantic import BaseModel, field_validator
 
 from src.config import LOG_LEVEL
 from src.modules.ik_transforms.types import (
-    NumberOrExpression,
     FONT_FAMILY,
     FONT_FILE_REGEX,
+    FlipMode,
+    TextLayerMode,
+    InnerAlignment,
+    NumberOrExpression,
     PaddingValue,
     AlphaLevel,
-    FlipMode,
     CutoutMode,
     CutterMode,
     MultiplyMode,
-    TextLayerMode,
+    Background,
 )
 from src.utils.tool_utils import list_assets
 
@@ -24,13 +26,13 @@ logger.setLevel(LOG_LEVEL)
 
 class TextOverlay(BaseModel):
     text: str
-    lx: Optional[NumberOrExpression] = None
-    ly: Optional[NumberOrExpression] = None
+    layer_x: Optional[NumberOrExpression] = None
+    layer_y: Optional[NumberOrExpression] = None
     width: Optional[NumberOrExpression] = None
     font_size: Optional[NumberOrExpression] = None
     font_family: Optional[str] = None
     color: Optional[str] = None
-    inner_alignment: Optional[Literal["left", "center", "right"]] = None
+    inner_alignment: Optional[InnerAlignment] = None
     padding: Optional[PaddingValue] = None
     alpha: Optional[AlphaLevel] = None
     typography: Optional[
@@ -44,7 +46,7 @@ class TextOverlay(BaseModel):
             "b_i_strikethrough",
         ]
     ] = None
-    background: Optional[str] = None
+    background: Optional[Background] = None
     corner_radius: Optional[NumberOrExpression] = None
     rotation: Optional[NumberOrExpression] = None
     flip: Optional[FlipMode] = None
@@ -110,11 +112,11 @@ class TextOverlay(BaseModel):
         # -------------------------------------------------
         position: Dict[str, Any] = {}
 
-        if "lx" in dumped:
-            position["x"] = dumped["lx"]
+        if "layer_x" in dumped:
+            position["x"] = dumped["layer_x"]
 
         if "ly" in dumped:
-            position["y"] = dumped["ly"]
+            position["y"] = dumped["layer_y"]
 
         if position:
             overlay["position"] = position
@@ -202,8 +204,8 @@ class TextOverlayTransforms:
     async def _text_overlay_impl(
         self,
         text: str,
-        lx: Optional[NumberOrExpression] = None,
-        ly: Optional[NumberOrExpression] = None,
+        layer_x: Optional[NumberOrExpression] = None,
+        layer_y: Optional[NumberOrExpression] = None,
         width: Optional[NumberOrExpression] = None,
         font_size: Optional[NumberOrExpression] = None,
         font_family: Optional[str] = None,
@@ -247,20 +249,19 @@ class TextOverlayTransforms:
             - Plain text input is truncated after 2000 characters.
             - Base64-encoded input is truncated after 2500 characters.
 
-        lx : NumberOrExpression, optional
+        layer_x : NumberOrExpression, optional
             Horizontal position of the text layer relative to the base image.
 
             Accepted forms:
-            - Positive or negative numbers (negative values are serialized using
-            the `N` prefix, e.g. `-35` → `N35`)
+            - Positive or negative numbers
             - Arithmetic expressions (e.g. `bw_mul_0.1`, `bw_div_2`)
 
             If omitted, the text is horizontally centered.
 
-        ly : NumberOrExpression, optional
+        layer_y : NumberOrExpression, optional
             Vertical position of the text layer relative to the base image.
 
-            Same rules as `lx` apply.
+            Same rules as `layer_x` apply.
             If omitted, the text is vertically centered.
 
         width : NumberOrExpression, optional
@@ -376,8 +377,8 @@ class TextOverlayTransforms:
         """
         text_overlay = TextOverlay(
             text=text,
-            lx=lx,
-            ly=ly,
+            layer_x=layer_x,
+            layer_y=layer_y,
             width=width,
             font_size=font_size,
             font_family=font_family,
