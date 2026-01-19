@@ -69,3 +69,157 @@ ai_transform:
     - plain text prompt support
     - base64 encoded prompt support
     - safe handling of special characters in prompts
+
+image_overlay:
+  capability:
+    # Overlay composition
+    - overlay an image on top of a base image
+    - layer multiple image overlays sequentially
+    - use solid color blocks as overlays
+    - use gradient-filled overlays
+    - nest overlays within other overlays
+
+    # Positioning & layout
+    - position overlay using absolute coordinates
+    - position overlay using relative focus points
+    - position overlay using arithmetic expressions
+    - position overlay using negative offsets
+    - align overlay relative to parent container
+    - control overlay placement using focus anchors
+
+    # Sizing & cropping
+    - resize overlay by width
+    - resize overlay by height
+    - resize overlay using arithmetic expressions
+    - crop overlay using extract mode
+    - pad and resize overlay to fixed dimensions
+    - apply padded extract crop
+    - define exact crop region using absolute coordinates
+    - define crop region using center-based coordinates
+    - zoom into cropped region
+    - enforce crop behavior using crop modes
+
+    # Background handling
+    - apply solid color background behind overlay
+    - apply dominant color background
+    - apply blurred image background
+    - apply gradient background behind overlay
+    - control background appearance during padding
+    - support transparent overlays with background fill
+
+    # Visual effects on overlays
+    - convert overlay to grayscale
+    - apply border around overlay
+    - automatically trim transparent edges
+    - add rounded corners to overlay
+    - apply blur to overlay
+    - rotate overlay image
+    - flip overlay horizontally or vertically
+    - add drop shadow to overlay image
+    - replace colors inside overlay image
+
+    # Layer blending & masking
+    - blend overlay with base image using multiply mode
+    - cut transparent regions into base image using cutout mode
+    - mask base image using overlay shape using cutter mode
+    - distort base image using overlay as displacement map
+
+    # Encoding & control
+    - support encoded overlay image paths
+    - support arithmetic expressions for all numeric parameters
+    - support negative values via internal encoding
+
+text_overlay:
+  capability:
+    # Text rendering
+    - render text as an overlay on images
+    - render multi-line wrapped text
+    - auto-calculate text height based on content
+    - constrain text within maximum renderable dimensions
+
+    # Positioning & layout
+    - position text using absolute coordinates
+    - position text using arithmetic expressions
+    - position text using negative offsets
+    - align text layer relative to base image
+    - align text relative to parent container
+    - control text placement using focus anchors
+
+    # Typography & font control
+    - control font size using numbers or expressions
+    - set custom font family
+    - use predefined font families
+    - apply bold, italic, and strikethrough styles
+    - combine multiple typography styles
+    - control line height for wrapped text
+    - control text alignment within text box
+
+    # Color & background
+    - set text color using named colors
+    - set text color using RGB hex
+    - set text color using RGBA hex with opacity
+    - apply solid background behind text
+    - apply padding around text content
+    - control background transparency using alpha
+
+    # Transformations & effects
+    - flip text horizontally or vertically
+    - rotate text layer
+    - blur text layer
+    - apply rounded corners to text background
+    - trim text background automatically
+
+    # Layer blending & masking
+    - blend text with base image using multiply mode
+    - cut transparent text shapes into base image
+    - mask base image using text shape
+    - use text as a cutter mask for base image
+
+    # Expression & limits
+    - support arithmetic expressions for size and position
+    - serialize negative values using internal encoding
+    - enforce text rendering size limits
+
+effects_and_enhancement:
+  capability:
+    # Image enhancement
+    - automatically enhance image contrast
+    - sharpen images using basic sharpening
+    - apply advanced unsharp masking
+    - convert images to grayscale
+    - improve visual clarity and edge definition
+
+    # Blur & distortion
+    - apply gaussian blur with configurable intensity
+    - distort image perspective using custom coordinates
+    - curve images using arc distortion
+    - displace pixels using displacement maps
+
+    # Color & tone manipulation
+    - replace specific colors while preserving luminosity
+    - control tolerance for color replacement
+    - adjust color appearance using gradients
+    - apply linear gradient overlays
+    - apply gradient backgrounds behind layers
+
+    # Shadow & depth
+    - add drop shadow to transparent images
+    - control shadow blur, saturation, and offsets
+    - simulate elevation using shadow parameters
+
+    # Geometry & orientation
+    - rotate images clockwise or counter-clockwise
+    - auto-rotate images using EXIF data
+    - flip images horizontally or vertically
+    - apply rounded corners or circular masking
+
+    # Trimming & cleanup
+    - automatically trim uniform backgrounds
+    - control trim aggressiveness using threshold
+    - remove excess transparent or solid regions
+
+    # Chaining & scope
+    - apply effects globally to base image
+    - apply effects to image overlays
+    - apply effects to text overlays
+    - chain multiple effects in a single transformation
