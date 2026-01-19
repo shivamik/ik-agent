@@ -1,4 +1,1539 @@
 parameter_name,ik_key,value_type,allowed_values,constraints,tags,used_in,description,example_usage,method_name
+width,width,"number, arithmetic_expression, """"""auto""""""",integer > 1 (px) OR 0 < w < 1 (percentage) OR arithmetic expression,Auto width from Client Hint Sec-CH-Width.,"resize, crop",image,"Output width. If only w is provided, height auto-scales to preserve aspect ratio.","### Example 1
+
+**Integer value**
+
+```python
+tx = resize_and_crop(
+    width=300
+)
+```
+
+---
+
+### Example 2
+
+**Floating value between [0, 1]**
+
+```python
+tx = resize_and_crop(
+    width=0.2  # 20% of total width
+)
+```
+
+---
+
+### Example 3
+
+**Arithmetic expression**
+
+```python
+tx = resize_and_crop(
+    width=""ih_div_2""
+)
+```",resize_and_crop
+height,height,"number, arithmetic_expression, """"""auto""""""",integer > 1 (px) OR 0 < w < 1 (percentage) OR arithmetic expression,,resize,image,"Output height. If only h is provided, width auto-scales to preserve aspect ratio.","### Example 1
+
+**Integer value**
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    height=300
+)
+```
+
+---
+
+### Example 2
+
+**Floating value between [0, 1]**
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    height=0.2  # 20% of total height
+)
+```
+
+---
+
+### Example 3
+
+**Arithmetic expression**
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    height=""iw_div_2""
+)
+```",resize_and_crop
+Aspect Ratio,aspect_ratio,"<w>-<h>, arithmetic_expression","width-height, arithmetic expression",Must be used with either w or h. Ignored if both w and h are provided.,resize,image,Aspect ratio (width:height).,"### Example 1
+
+**width = 400, height = 300, aspect ratio = 4:3**
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    aspect_ratio=""4-3"",
+    width=400
+)
+```
+
+---
+
+### Example 2
+
+**width = 400, aspect ratio = 2:1 (derived using arithmetic expression)**
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    aspect_ratio=""iar_mul_2"",
+    width=400
+)
+```",resize_and_crop
+Crop Mode,crop_mode,enum,pad_resize | pad_extract | extract,"pad_resize
+
+* Requires **both `w` and `h`** to be meaningful.
+* Never crops image content.
+* Output may contain padding (transparent or background color).
+* Aspect ratio is always preserved.
+* Padding placement depends on `fo` (default: center).
+* Not suitable if you want to remove any part of the image.
+
+----
+extract
+
+* Requires **both `w` and `h`**.
+* Does **not resize** image content.
+* Crop fails if extracted region exceeds image bounds (especially with `xc`, `yc`).
+* Default focus is center unless overridden.
+* Sensitive to auto-rotation metadata.
+* Cannot upscale extracted content.
+
+---
+pad_extract
+
+* Requires **both `w` and `h`**.
+* Padding is added when extraction size > original image.
+* Aspect ratio is preserved.
+* Padding color must be explicitly set if non-default is required.
+* Still depends on valid focus logic.
+
+","resize, crop",image,"`cm-pad_resize` resizes the image to fit within the requested width and height **without cropping**, preserving aspect ratio by adding padding to reach exact dimensions.
+
+
+`cm-extract` extracts a fixed-size region from the original image **without resizing**, preserving aspect ratio by cropping a specific area.
+
+`cm-pad_extract` extracts a region like `cm-extract` but **adds padding** if the requested dimensions exceed the original image size.
+
+","## pad_resize
+
+### Example: Equal padding on all sides
+
+This example shows resizing while preserving the image and adding equal padding.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop_mode=""pad_resize""
+)
+```
+
+---
+
+### Example: Padding with background color
+
+This example shows padding added with a solid background color.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop_mode=""pad_resize"",
+    background=""F3F3F3""
+)
+```
+
+---
+
+### Example: All padding on the right
+
+This example shows padding pushed to one side using focus.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop_mode=""pad_resize"",
+    focus=""left""
+)
+```
+
+---
+
+### Example: All padding at the bottom
+
+This example shows vertical padding placement.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=100,
+    height=200,
+    crop_mode=""pad_resize"",
+    focus=""top""
+)
+```
+
+---
+
+### Example: Responsive padding using percentage width
+
+This example shows width as a percentage with exact height.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=0.5,
+    height=200,
+    crop_mode=""pad_resize""
+)
+```
+
+---
+
+## extract
+
+### Example: Center extract
+
+This example shows extracting a centered region.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=200,
+    height=200,
+    crop_mode=""extract""
+)
+```
+
+---
+
+### Example: Extract from bottom-right
+
+This example shows relative focus extraction.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    focus=""bottom_right""
+)
+```
+
+---
+
+### Example: Extract using X and Y coordinates
+
+This example shows extracting from a specific pixel location.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x=100,
+    y=300
+)
+```
+
+---
+
+### Example: Extract using center coordinates
+
+This example shows extraction based on a center focal point.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x_center=300,
+    y_center=400
+)
+```
+
+---
+
+### Example: Object-aware extract
+
+This example shows smart extraction around an object.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car""
+)
+```
+
+---
+
+### Example: Extract with zoom out
+
+This example shows including more background.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## pad_extract
+
+### Example: Extract larger than original image
+
+This example shows padding added because the image is smaller.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=800,
+    height=800,
+    crop_mode=""pad_extract""
+)
+```
+
+---
+
+### Example: Pad extract with background color
+
+This example shows padded extraction with a visible background.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=800,
+    height=800,
+    crop_mode=""pad_extract"",
+    background=""F3F3F3""
+)
+```
+
+---
+
+### Example: Object-aware padded extract
+
+This example shows smart extraction with padding.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=600,
+    crop_mode=""pad_extract"",
+    focus=""person""
+)
+```
+
+---
+
+### Example: Padded extract using center coordinates
+
+This example shows coordinate-based padded extraction.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=500,
+    height=500,
+    crop_mode=""pad_extract"",
+    x_center=250,
+    y_center=250
+)
+```
+
+---
+
+### Example: Pad extract with zoom
+
+This example shows zoom applied during padded extraction.
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""pad_extract"",
+    focus=""car"",
+    zoom=1.2
+)
+```",resize_and_crop
+Crop,crop,enum,force | at_max_enlarge | at_least | maintain_ratio,"## force (`force`)
+
+* Requires **both `w` and `h`**
+* Aspect ratio is **not preserved**
+* No cropping occurs
+* Image may appear distorted
+* Focus (`fo`) has no effect
+* Not suitable for photos where proportions matter
+
+---
+
+## at_max_enlarge (`at_max_enlarge`)
+
+* Requires **both `w` and `h`**
+* Aspect ratio is always preserved
+* Output dimensions may be **smaller than requested**
+* Enlarges images beyond original size
+* No cropping occurs
+* Focus (`fo`) has no effect
+
+---
+
+## at_least (`at_least`)
+
+* Requires **both `w` and `h`**
+* Aspect ratio is preserved
+* One dimension may be **larger than requested**
+* No cropping occurs
+* Focus (`fo`) has no effect
+* Image may overflow container in one dimension
+
+---
+
+## maintain_ratio (`maintain_ratio`)
+
+* Requires **both `w` and `h`**
+* Cropping always occurs if aspect ratios differ
+* Aspect ratio is preserved
+* Default focus is center
+* Sensitive to `fo` (auto, face, object, custom)
+* Default crop mode if no `c` or `cm` is specified",crop,image,"**force (`force`)**
+Resizes the image to the exact requested width and height **without preserving aspect ratio**, squeezing or stretching the image if needed.
+
+**at_max_enlarge (`at_max_enlarge`)**
+Resizes the image while preserving aspect ratio so that it fits **within the requested dimensions**, allowing enlargement beyond the original size.
+
+**at_least (`at_least`)**
+Resizes the image while preserving aspect ratio so that it is **at least as large as the requested dimensions**, possibly exceeding one dimension.
+
+**maintain_ratio (`maintain_ratio`)**
+Resizes the image to the exact requested width and height while preserving aspect ratio by **cropping parts of the image** (default crop behavior).","---
+
+## force (`force`)
+
+### This example shows forced resizing without preserving aspect ratio
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop=""force""
+)
+```
+
+---
+
+### This example shows forced resize on a square image
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""force""
+)
+```
+
+---
+
+## at_max_enlarge (`at_max_enlarge`)
+
+### This example shows resizing within bounds while allowing enlargement
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=850,
+    height=1000,
+    crop=""at_max_enlarge""
+)
+```
+
+---
+
+### This example shows responsive max-size enlarge behavior
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=500,
+    height=300,
+    crop=""at_max_enlarge""
+)
+```
+
+---
+
+## at_least (`at_least`)
+
+### This example shows resizing so image is at least the requested size
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop=""at_least""
+)
+```
+
+---
+
+### This example shows image exceeding one dimension
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""at_least""
+)
+```
+
+---
+
+## maintain_ratio (`maintain_ratio`)
+
+### This example shows default center crop
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    crop=""maintain_ratio""
+)
+```
+
+---
+
+### This example shows maintain ratio with auto smart focus
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=200,
+    height=300,
+    crop=""maintain_ratio"",
+    focus=""auto""
+)
+```
+
+---
+
+### This example shows object-aware cropping
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car""
+)
+```
+
+---
+
+### This example shows maintain ratio with zoom
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+### This example shows maintain ratio using custom focus
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=500,
+    height=100,
+    crop=""maintain_ratio"",
+    focus=""custom""
+)
+```",resize_and_crop
+Focus Custom,focus,"""""""custom""""""","""custom""","* Requires a **custom focus area to be defined beforehand** (upload or media library).
+* Has **no effect** if no custom focus is stored for the image.
+* Works **only with cropping strategies**, not plain resizing.
+* Supported only with:
+
+  * `c-maintain_ratio`
+  * `cm-extract`
+* Ignored in:
+
+  * `c-force`
+  * `c-at_max`
+  * `c-at_max_enlarge`
+  * `c-at_least`
+  * `cm-pad_resize`
+* Does not work without meaningful dimensions (`w` and `h`).
+* Cannot be combined with coordinate-based focus (`x`, `y`, `xc`, `yc`).",crop,image,Uses a **predefined custom focus area** (set during upload or in the media library) as the focal point for cropping or extraction.,"---
+
+## custom with maintain_ratio
+
+### This example shows cropping based on a custom focus area using the default crop strategy
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=500,
+    height=100,
+    crop=""maintain_ratio"",
+    focus=""custom""
+)
+```
+
+---
+
+## custom with extract crop mode
+
+### This example shows extracting an area using a predefined custom focus
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=500,
+    height=100,
+    crop_mode=""extract"",
+    focus=""custom""
+)
+```",resize_and_crop
+Focus Auto - Smart Crop,focus,"""""""auto""""""","""auto""","* Requires **both `w` and `h`**
+* Works only with crop strategies that support cropping:
+
+  * Default `c-maintain_ratio`
+  * `cm-extract`
+* Does **not** work with:
+
+  * `c-force`
+  * `c-at_max`
+  * `c-at_least`
+  * `c-at_max_enlarge`
+  * `cm-pad_resize`
+* Accuracy is heuristic and may fail for some images
+* Trades accuracy for speed (real-time constraint)
+* Cannot control which object is selected
+* Zoom (`z`) is optional but affects final crop","crop, smart_crop",image,Automatically detects the most important region of an image and centers cropping around it to generate better thumbnails.,"
+## fo-auto with default crop strategy (maintain_ratio)
+
+### This example shows smart automatic cropping for a portrait thumbnail
+
+```json
+{
+  ""width"": 200,
+  ""height"": 300,
+  ""focus"": ""auto""
+}
+```",resize_and_crop
+Focus Face - Smart Crop,focus,"""""""face""""""","""face""","
+* Requires **both `w` and `h`**
+* Works only with crop strategies that perform cropping:
+
+  * Default `c-maintain_ratio`
+  * `cm-extract`
+* Does **not** work with:
+
+  * `c-force`
+  * `c-at_max`
+  * `c-at_least`
+  * `c-at_max_enlarge`
+  * `cm-pad_resize`
+* Accuracy depends on face detection quality
+* May not give accurate results for all images
+* Supports `zoom (z)` to control background inclusion
+* Real-time detection trades speed for accuracy","crop, smart_crop",image,Automatically detects one or more faces in the image and crops around them to generate face-focused thumbnails.,"## fo-auto with default crop strategy (maintain_ratio)
+
+### This example shows smart automatic cropping for a portrait thumbnail
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=200,
+    height=300,
+    crop=""maintain_ratio"",
+    focus=""auto""
+)
+```
+---
+
+Here are the **converted examples**, rewritten to use the correct method
+`ResizeAndCropTransforms().resize_and_crop`, with the default crop strategy (`maintain_ratio`) made explicit.
+
+---
+
+## Zoom with fo-face (default zoom)
+
+### This example shows face cropping with default zoom
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face""
+)
+```
+
+---
+
+## Zoom with fo-face (zoom in)
+
+### This example shows zooming in on the detected face
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face"",
+    zoom=2.0
+)
+```
+
+---
+
+## Zoom with fo-face (zoom out)
+
+### This example shows zooming out to include more background
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face"",
+    zoom=0.5
+)
+```
+",resize_and_crop
+Focus Objects - Smart Crop,focus,"""""""object""""""","""object"" | ""<object1>_<object2>""","
+* Object name must be from the **supported COCO object list**
+* Detection is heuristic and may fail for some images
+* If the specified object is not found, cropping may fall back or fail
+* Behavior depends on usage:
+
+  * With no `w` / `h`: tightly crops to the object
+  * With `w` / `h`: uses `c-maintain_ratio` or `cm-extract`
+* When multiple objects are provided, **first detected object wins**
+* Supports `zoom (z)` to include or exclude background
+* Real-time detection trades speed for accuracy","crop, smart_crop",image,Automatically detects a specified object in the image and crops or extracts the image while keeping that object in focus.,"## Zoom with fo-object and extract crop mode
+
+### This example shows object-aware extraction with default zoom
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car""
+)
+```
+
+---
+
+## Zoom with fo-object and extract (zoom out)
+
+### This example shows extract crop with zoomed-out background
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## Zoom with fo-object and extract (zoom in)
+
+### This example shows extract crop zoomed in on the object
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+## Zoom with tightly cropped object
+
+### This example shows tightly cropped object with default zoom
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car""
+)
+```
+
+---
+
+## Zoom with tightly cropped object (zoom out)
+
+### This example shows zoomed-out tightly cropped object
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## Zoom with tightly cropped object (zoom in)
+
+### This example shows zoomed-in tightly cropped object
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+## Zoom with tightly cropped object and aspect ratio
+
+### This example shows object crop with aspect ratio
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    aspect_ratio=""2-1""
+)
+```
+
+---
+
+## Zoom with tightly cropped object, aspect ratio, and zoom
+
+### This example shows zoom applied with aspect ratio
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    aspect_ratio=""2-1"",
+    zoom=0.6
+)
+```",resize_and_crop
+Zoom,zoom,number,"0-1, >1
+","* Works **only with focus-based cropping**
+
+  * `fo-face`
+  * `fo-<object>`
+* Has **no effect** without a valid `fo` value
+* Does **not** work with:
+
+  * `c-force`
+  * `c-at_max`
+  * `c-at_least`
+  * `c-at_max_enlarge`
+  * `cm-pad_resize`
+* Default value is `z-1`
+* Valid values:
+
+  * `0 < z < 1` → zoom out (include more background)
+  * `z > 1` → zoom in (exclude background)
+* Accuracy depends on quality of object / face detection
+* Behavior differs based on crop mode:
+
+  * Default `c-maintain_ratio`
+  * `cm-extract`
+  * Tightly cropped object",crop,image,Controls how much to zoom in or zoom out around the focused area during face- or object-based cropping.,"
+## Zoom with tightly cropped object, aspect ratio, and zoom
+
+### This example shows zoom applied with aspect ratio
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    aspect_ratio=""2-1"",
+    zoom=0.6
+)
+```
+
+Below are **only the zoom-related examples**, rewritten to use the correct method
+`ResizeAndCropTransforms().resize_and_crop`.
+Non-zoom explanations are kept minimal and defaults are validator-safe.
+
+---
+
+## Zoom with fo-face (default zoom)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face""
+)
+```
+
+---
+
+## Zoom with fo-face (zoom in)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face"",
+    zoom=2.0
+)
+```
+
+---
+
+## Zoom with fo-face (zoom out)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=150,
+    height=150,
+    crop=""maintain_ratio"",
+    focus=""face"",
+    zoom=0.5
+)
+```
+
+---
+
+## Zoom with fo-object using default crop mode
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car""
+)
+```
+
+---
+
+## Zoom with fo-object (z = 1)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=1
+)
+```
+
+---
+
+## Zoom with fo-object (zoom out)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## Zoom with fo-object (zoom in)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=400,
+    height=400,
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+## Zoom with fo-object and extract crop mode
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car""
+)
+```
+
+---
+
+## Zoom with fo-object and extract (zoom out)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## Zoom with fo-object and extract (zoom in)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=600,
+    height=400,
+    crop_mode=""extract"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+## Zoom with tightly cropped object
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car""
+)
+```
+
+---
+
+## Zoom with tightly cropped object (zoom out)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=0.6
+)
+```
+
+---
+
+## Zoom with tightly cropped object (zoom in)
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    zoom=1.4
+)
+```
+
+---
+
+## Zoom with tightly cropped object and aspect ratio
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    aspect_ratio=""2-1""
+)
+```
+
+---
+
+## Zoom with tightly cropped object, aspect ratio, and zoom
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    crop=""maintain_ratio"",
+    focus=""car"",
+    aspect_ratio=""2-1"",
+    zoom=0.6
+)
+```
+
+---",resize_and_crop
+x position of cm_extract,"x, y, x_center, y_center",number,number,"## x
+
+* Works **only with `cm-extract`**
+* Requires **both `w` and `h`**
+* Value is relative to the original image’s top-left corner
+* Crop fails if extracted area exceeds image bounds
+* Affected by image auto-rotation metadata
+* Cannot be used with resize-only crop modes
+
+---
+
+## y
+
+* Works **only with `cm-extract`**
+* Requires **both `w` and `h`**
+* Value is relative to the original image’s top-left corner
+* Crop fails if extracted area exceeds image bounds
+* Affected by image auto-rotation metadata
+* Cannot be used with resize-only crop modes
+
+---
+
+## xc
+
+* Works **only with `cm-extract`**
+* Requires **both `w` and `h`**
+* Defines center of extraction, not the edge
+* Crop fails if centered area exceeds image bounds
+* More error-prone than `x,y`
+* Affected by image auto-rotation metadata
+
+---
+
+## yc
+
+* Works **only with `cm-extract`**
+* Requires **both `w` and `h`**
+* Defines center of extraction, not the edge
+* Crop fails if centered area exceeds image bounds
+* More error-prone than `x,y`
+* Affected by image auto-rotation metadata","crop, position",image,"**x**
+Specifies the horizontal position of the **top-left corner** of the extracted area from the original image.
+
+**y**
+Specifies the vertical position of the **top-left corner** of the extracted area from the original image.
+
+**xc**
+Specifies the horizontal position of the **center point** of the extracted area from the original image.
+
+**yc**
+Specifies the vertical position of the **center point** of the extracted area from the original image.","---
+
+## x (with y)
+
+### This example shows extraction starting from a fixed top-left point
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x=100,
+    y=300
+)
+```
+
+---
+
+## y (with x)
+
+### This example shows vertical offset for the extraction start point
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x=100,
+    y=300
+)
+```
+
+---
+
+## x_center (with y_center)
+
+### This example shows extraction centered around a specific focal point
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x_center=300,
+    y_center=400
+)
+```
+
+---
+
+## y_center (with x_center)
+
+### This example shows vertical center positioning for extraction
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=300,
+    crop_mode=""extract"",
+    x_center=300,
+    y_center=400
+)
+```
+
+---",resize_and_crop
+dpr,dpr,number,number,"* Can be used **only when `w` or `h` is specified**
+* Valid range: **`0.1` to `5`**
+* If calculated output width or height:
+
+  * Is **less than 1px**, or
+  * Is **greater than 5000px**
+    → DPR is ignored and base dimensions are used
+* Does **not** change aspect ratio
+* Does **not** work without dimensions
+* `dpr-auto` depends on client hints (`Sec-CH-DPR`)
+* Ineffective if client hints are not sent by the browser",resize,image,Specifies the device pixel ratio used to scale the output image dimensions for high-DPR displays like Retina or high-end mobile screens.,"
+## DPR with width specified
+
+### This example shows DPR applied to width-based resizing
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    dpr=2
+)
+```
+
+---
+
+## DPR with height specified
+
+### This example shows DPR applied to height-based resizing
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    height=200,
+    dpr=2
+)
+```
+
+---
+
+## DPR with both width and height
+
+### This example shows DPR scaling both dimensions
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    height=200,
+    dpr=2
+)
+```
+
+---
+
+## DPR auto using client hints
+
+### This example shows automatic DPR detection via request headers
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=300,
+    dpr=""auto""
+)
+```
+
+---
+
+## DPR ignored due to output size constraints
+
+### This example shows DPR being ignored when output exceeds limits
+
+```python
+tx = ResizeAndCropTransforms().resize_and_crop(
+    width=6000,
+    dpr=2
+)
+```
+
+---",resize_and_crop
+Remove dot bg Background removal,ai_remove_background_external,boolean,boolean,,background_removal,ai_transformation,"Removes the background from an image using AI, producing a transparent background around the primary subject.","# Example 1: Remove background from an image
+
+```
+{
+    ""ai_background_removal_external"": True
+}
+```
+
+# Example 2: Remove background using removedotbg and add dropshadow
+
+```
+{
+    ""ai_background_removal_external"": True,
+    ""ai_drop_shadow"": True,
+}
+```",ai_transform
+Imagekit background removal,ai_remove_background,boolean,boolean,,background_removal,ai_transformation,"Removes the background from an image using AI, producing a transparent background around the primary subject.","# Example 1: Use imagekit proprietery background removal model
+
+```
+{
+    ""ai_remove_background"": True,
+}
+```",ai_transform
+AI Drop Shadow,ai_drop_shadow,boolean,boolean,,drop_shadow,ai_transformation,"**`e-dropshadow`**
+Adds an AI-generated drop shadow around the main object in an image, simulating realistic lighting based on a virtual light source.
+
+## Parameters and Defaults
+
+The following parameters can be used with `e-dropshadow`:
+
+* **`az` (Azimuth)**
+  Direction of the light source.
+  Range: `0–360`
+  Default: `215`
+
+* **`el` (Elevation)**
+  Elevation angle of the light source above the surface.
+  Range: `0–90`
+  Default: `45`
+
+* **`st` (Saturation)**
+  Intensity of the shadow.
+  Range: `0–100`
+  Default: `60`
+
+Syntax:
+
+```
+e-dropshadow[:-az-${0-360}][:_el-${0-90}][:_st-${0-100}]
+```","# Example 1: AI Drop shadow with default params
+```
+{
+    ""ai_drop_shadow"": True
+}
+```
+
+# Example 2: AI Drop show with azimuth=45
+```
+{
+    ""ai_drop_shadow"": {
+        ""az"": 45
+    }
+}
+```",ai_transform
+AI Change Background,ai_changebg,boolean,boolean,,ai_change_bg,ai_transformation,"**`e-changebg`**
+Changes the background of an image by generating a new background based on a descriptive text prompt while preserving the foreground subject.
+
+## Parameters and Defaults
+
+The following parameters are supported with `e-changebg`:
+
+* **`prompt` (text prompt)**
+  Describes the new background to be generated.
+  Formats:
+
+  * `e-changebg-prompt-${text}`
+  * `e-changebg-prompte-${urlencoded_base64_encoded_text}`
+    Default: **No default** (required)
+
+There are **no additional configurable sub-parameters** (such as strength, style, or positioning) directly attached to `e-changebg`.
+","# Example 1: Change Background with default params
+```
+{
+    ""ai_changebg"": {
+        'prompt': 'snow road'
+    },
+}
+```
+
+# Example 2: Change background with prompt encoded in base64
+```
+{
+    ""ai_changebg"": {
+        'prompt': 'racing track'
+    },
+    ""encoded"": True
+}
+```",ai_transform
+AI Edit,ai_edit,boolean,boolean,,ai_edit,ai_transformation,"**`e-edit`**
+Edits or modifies the contents of an image using a descriptive text prompt, generating a new image with AI-driven visual changes.
+## Parameters and Defaults
+
+The following parameters are supported with `e-edit`:
+
+* **`prompt` (text prompt)**
+  Describes how the image should be edited.
+  Formats:
+
+  * `e-edit-prompt-${text}`
+  * `e-edit-prompte-${urlencoded_base64_encoded_text}`
+    Default: **No default** (required)
+
+There are **no additional configurable sub-parameters** (such as strength, mask, or style) available for `e-edit`.","# Example 1: AI Edit with custom prompt
+```
+{
+    ""ai_edit"": {
+        'prompt': 'add some flair to this plain cake'
+    }
+}
+```
+
+# Example 2: AI Edit with custom prompt and base64 encoding
+```
+{
+    ""ai_edit"": {
+        'prompt': 'Make the seawater blue'
+    },
+    ""encoded"": True
+}
+```",ai_transform
+Generative fill,ai_bg_genfill,boolean,boolean,,ai_bg_genfill,ai_transformation,"**`bg-genfill`**
+Extends an image beyond its original boundaries by generating new background content using AI while preserving the original image content.
+
+
+The following parameters are supported with `bg-genfill`:
+
+* **`prompt` (text prompt)** *(optional)*
+  Describes what should be generated in the extended background.
+  Formats:
+
+  * `bg-genfill-prompt-${text}`
+  * `bg-genfill-prompte-${urlencoded_base64_encoded_text}`
+    Default: **No prompt** (AI fills background automatically)
+
+* **`width (w)`** *(required)*
+  Target width of the output image.
+  Default: **None (required)**
+
+* **`height (h)`** *(required)*
+  Target height of the output image.
+  Default: **None (required)**
+
+* **`crop_mode (cm)`** *(required)*
+  Must be one of:
+
+  * `cm-pad_resize`
+  * `cm-pad_extract`
+    Default: **None (required)**
+","# Example 1: Generative fill with no prompt
+```
+{
+    ""ai_bg_genfill"": {
+        ""width"": 1000,
+        ""height"": 960,
+        ""crop_mode"": ""pad_resize"",
+    }
+}
+```
+
+# Example 2: Generative fill with custom prompt
+```
+{
+    ""ai_bg_genfill"": {
+        ""width"": 1000,
+        ""height"": 960,
+        ""crop_mode"": ""pad_resize"",
+        ""prompt"": ""flowers""
+    }
+}
+```",ai_transform
+AI Generate Image,ai_gen_image,boolean,boolean,,ai_gen_image,ai_transformation,"Generates a new image from a text prompt using AI and stores the generated image at the specified file path.
+
+## Parameters and Defaults
+
+The following parameters are supported with `ik-genimg`:
+
+* **`prompt` (text prompt)** *(required)*
+  Describes the image to be generated.
+  Format:
+
+  * `ik-genimg-prompt-${text}`
+    Default: **No default** (required)
+
+* **`filepath` and `filename`** *(required)*
+  `ik-genimg-prompt-${text}/filepath/filename.jpg`
+  Determines where the generated image will be stored and accessed.
+  Default: **None (required)**
+
+There are **no additional AI tuning parameters** (such as style, seed, or resolution) available for `ik-genimg`.","### Example 1: Generate an image using a text prompt
+
+This example shows generating an image of a man eating a burger.
+
+```
+{
+  ""path"": ""ik-genimg-prompt-A man eating a burger/gen-burger-image.jpg""
+}
+```
+
+
+---
+
+### Example 2: Generate another version by appending a query parameter
+
+This example shows forcing regeneration by appending a random query parameter.
+
+```
+{
+  ""path"": ""ik-genimg-prompt-A man eating a burger/gen-burger-image.jpg"",
+  ""query"": ""v=3""
+}
+```
+
+---
+",ai_transform
+AI Generative Variation,ai_genvar,boolean,boolean,,ai_genvar,ai_transformation,"**`e-genvar`**
+Generates AI-based visual variations of an existing image while preserving its overall structure and composition.
+
+
+## Parameters and Defaults
+
+The following parameters are supported with `e-genvar`:
+
+* **No additional parameters**
+  The transformation is applied as a single flag:
+  `e-genvar`
+  Default behavior applies automatically.","# Example 1: Generate variation
+```
+{
+    ""ai_generate_variation"": True
+}
+```",ai_transform
+Retouch ,ai_retouch,boolean,boolean,,ai_retouch,ai_transformation,"Improves the visual quality of an image using AI by enhancing details and correcting imperfections.
+
+
+The following parameters are supported with `e-retouch`:
+
+* **No additional parameters**
+  The transformation is applied as a single flag:
+  `e-retouch`
+  Default behavior applies automatically.
+","# Example: Retouch image to improve its quality
+{
+    ""ai_retouch"": True
+}",ai_transform
+AI Upcale,ai_upscale,boolean,boolean,,ai_upscale,ai_transformation,"**`e-upscale`**
+Increases the resolution of an image using AI, enhancing details while scaling the image up to a higher resolution.
+
+The following parameters are supported with `e-upscale`:
+
+* **No additional parameters**
+  The transformation is applied as a single flag:
+  `e-upscale`
+  Default behavior applies automatically.","# Example 1: Upscale an image
+```
+{
+    ""ai_upscale"": True
+}
+```",ai_transform
 Image Path,image_path,string,path (str),Required,image_overlay,image_overlay,Path of the overlay image from ImageKit media library.,"```
 {
     ""image_path"": ""logo-white_SJwqB4Nfe.png"",
