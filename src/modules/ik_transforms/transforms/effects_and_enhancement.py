@@ -22,12 +22,9 @@ from ..types import (
     BackgroundValue,
 )
 
-# -------------------------------------------------------------------
-# Effect sub-models
-# -------------------------------------------------------------------
-
-
 class UnsharpMaskEffect(BaseModel):
+    """Sharpening kernel parameters for `e-unsharp_mask`."""
+
     radius: float = Field(..., gt=0)
     sigma: float = Field(..., gt=0)
     amount: float = Field(..., gt=0)
@@ -35,7 +32,8 @@ class UnsharpMaskEffect(BaseModel):
 
 
 class ShadowEffect(BaseModel):
-    # e-shadow-<blur>_<saturation>_<x-offset>_<y-offset>
+    """Shadow parameters for `e-shadow-<blur>_<saturation>_<x-offset>_<y-offset>`."""
+
     blur: int = Field(10, ge=0, le=15)
     saturation: int = Field(30, ge=0, le=100)
     x_offset: int = Field(2, ge=-100, le=100)
@@ -43,6 +41,8 @@ class ShadowEffect(BaseModel):
 
 
 class GradientEffect(BaseModel):
+    """Gradient overlay parameters for `e-gradient`."""
+
     linear_direction: Optional[Union[int, POSITION]] = 180
     from_color: Optional[Color] = "FFFFFF"
     to_color: Optional[Color] = "00000000"
@@ -56,6 +56,8 @@ class GradientEffect(BaseModel):
 
 
 class PerspectiveDistortEffect(BaseModel):
+    """Perspective warp coordinates for `e-distort` (p-x1_y1_x2_y2_x3_y3_x4_y4)."""
+
     x1: Number
     y1: Number
     x2: Number
@@ -67,15 +69,21 @@ class PerspectiveDistortEffect(BaseModel):
 
 
 class ArcDistortEffect(BaseModel):
+    """Arc distortion degrees for `e-distort=a-<degrees>`."""
+
     degrees: Number
 
 
 class BorderEffect(BaseModel):
+    """Border width/color for `b` transform."""
+
     border_width: NumberOrExpression
     color: Color
 
 
 class ColorReplaceEffect(BaseModel):
+    """Color replacement parameters for `cr`."""
+
     to_color: Color
     tolerance: int = Field(35, ge=0, le=100)
     from_color: Optional[Color] = None
@@ -87,6 +95,13 @@ class ColorReplaceEffect(BaseModel):
 
 
 class Effects(BaseModel):
+    """
+    Validated set of ImageKit effect and enhancement parameters.
+
+    Each field maps to either an `e-*` effect or a regular transform.
+    Use `to_transform_dicts()` to emit ImageKit-ready dictionaries.
+    """
+
     # e-* effects
     contrast: Optional[bool] = None
     sharpen: Optional[Union[bool, int]] = Field(None, ge=0)
@@ -130,11 +145,10 @@ class Effects(BaseModel):
     # -------------------------------------------------
     def to_transform_dicts(self) -> list[Dict[str, Any]]:
         """
-        Returns a list of ImageKit transformation dicts.
+        Convert validated model into a list of ImageKit transformation dicts.
         """
         transforms: list[Dict[str, Any]] = []
         dumped = self.model_dump(exclude_none=True)
-        # effects: List[Dict[str, Any]] = []
 
         # -----------------------------
         # e-* effects
@@ -232,7 +246,7 @@ class Effects(BaseModel):
         # non-e transforms
         # -----------------------------
         if "blur" in dumped:
-            transforms["bl"] = dumped["blur"]
+            transforms.append({"bl": dumped["blur"]})
 
         if "trim" in dumped:
             trim_params = dumped["trim"]

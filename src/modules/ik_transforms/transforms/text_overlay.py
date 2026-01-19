@@ -241,6 +241,33 @@ class TextOverlayTransforms:
         """
         Build and validate a **text overlay layer** for ImageKit image transformations.
 
+        Schema:
+            text: string (required)
+            layer_x?: number | expression
+            layer_y?: number | expression
+            width?: number | expression
+            font_size?: number | expression
+            font_family?: string
+            color?: Color
+            inner_alignment?: InnerAlignment
+            padding?: PaddingValue
+            alpha?: AlphaLevel
+            typography?:
+                "b" |
+                "i" |
+                "strikethrough" |
+                "b_i" |
+                "b_strikethrough" |
+                "i_strikethrough" |
+                "b_i_strikethrough"
+            background?: BackgroundValue | Background
+            corner_radius?: number | expression
+            rotation?: number | expression
+            flip?: "h" | "v" | "h_v"
+            line_height?: number | expression
+            layer_mode?:
+                "multiply" | "cutout" | "cutter"
+
         Parameters
         ----------
         text : str

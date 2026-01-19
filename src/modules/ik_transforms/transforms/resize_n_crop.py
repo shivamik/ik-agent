@@ -62,21 +62,25 @@ tx = ResizeAndCropTransforms().resize_and_crop(
 import logging
 from typing import Any, ClassVar, Dict, Optional, Union, Literal
 
-from pydantic import BaseModel, model_validator, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    model_validator,
+    field_validator,
+)
 
 from src.utils.utils import get_transform_key
 from src.config import LOG_LEVEL, COCO_CLASSES
 from src.modules.ik_transforms.types import (
     BackgroundValue,
-    Background,
     CROP_MODES,
     CROP,
+    Background,
+    NumberOrExpression,
 )
 
 logger = logging.getLogger("transforms.resize_and_crop")
 logger.setLevel(LOG_LEVEL)
-
-NumberOrExpression = Union[int, float, str]
 
 
 class ResizeAndCrop(BaseModel):
@@ -86,12 +90,14 @@ class ResizeAndCrop(BaseModel):
     Use `.to_transform_dict()` to get the short-key dict consumed by the URL builder.
     """
 
+    model_config = ConfigDict(extra="ignore")
+
     # -------------------------------------------------
     # DIMENSIONS / CROP
     # -------------------------------------------------
     width: Optional[NumberOrExpression] = None
     height: Optional[NumberOrExpression] = None
-    aspect_ratio: Optional[str] = None
+    aspect_ratio: Optional[NumberOrExpression] = None
     crop: Optional[CROP] = "maintain_ratio"
     crop_mode: Optional[CROP_MODES] = None
 
@@ -148,26 +154,9 @@ class ResizeAndCrop(BaseModel):
         if isinstance(v, str) and v.strip():
             return v
 
-        raise ValueError(f"{info.field_name} must be a positive number or non-empty string")
-
-    @field_validator("aspect_ratio")
-    @classmethod
-    def validate_aspect_ratio(cls, v: Optional[str]):
-        if v is None:
-            return v
-
-        if not isinstance(v, str) or not v.strip():
-            raise ValueError("aspect_ratio must be a non-empty string")
-        return v.strip()
-
-    @field_validator("focus")
-    @classmethod
-    def validate_focus_string(cls, v: Optional[str]):
-        if v is None:
-            return v
-        if not isinstance(v, str) or not v.strip():
-            raise ValueError("focus (fo) must be a non-empty string")
-        return v.strip()
+        raise ValueError(
+            f"{info.field_name} must be a positive number or non-empty string"
+        )
 
     # -------------------------------------------------
     # Semantic validation
@@ -310,7 +299,9 @@ class ResizeAndCropTransforms:
         width: Optional[NumberOrExpression] = None,
         height: Optional[NumberOrExpression] = None,
         aspect_ratio: Optional[str] = None,
-        crop: Optional[Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]] = "maintain_ratio",
+        crop: Optional[
+            Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
+        ] = "maintain_ratio",
         crop_mode: Optional[Literal["pad_resize", "pad_extract", "extract"]] = None,
         focus: Optional[str] = None,
         zoom: Optional[NumberOrExpression] = None,
@@ -338,6 +329,7 @@ class ResizeAndCropTransforms:
 
         aspect_ratio : str, optional
             Aspect ratio as "<w>-<h>" (e.g. "16-9") or an arithmetic expression string.
+            `iar_div_2` or `car_mul_0.75`
 
         crop : {"force","at_max_enlarge","at_least","maintain_ratio"}, optional
             Default: "maintain_ratio"
@@ -385,7 +377,7 @@ class ResizeAndCropTransforms:
         if kwargs:
             logger.debug("Ignoring unsupported params: %s", kwargs)
 
-        model = ResizeAndCrop(
+        return ResizeAndCrop(
             width=width,
             height=height,
             aspect_ratio=aspect_ratio,
@@ -399,6 +391,4 @@ class ResizeAndCropTransforms:
             y_center=y_center,
             dpr=dpr,
             background=background,
-        )
-
-        return model.to_transform_dict()
+        ).to_transform_dict()

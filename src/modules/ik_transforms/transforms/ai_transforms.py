@@ -1,7 +1,7 @@
 import logging
-from typing import Dict, List, Optional, Literal, Any
+from typing import Dict, List, Optional, Literal, Any, Union
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from src.utils.utils import to_base64
 from src.config import LOG_LEVEL
 
@@ -12,6 +12,27 @@ logger.setLevel(LOG_LEVEL)
 # ------------------------------------------------------------------
 # Pydantic models
 # ------------------------------------------------------------------
+
+
+class AIChangeBackground(BaseModel):
+    prompt: str
+
+
+class AIEditImage(BaseModel):
+    prompt: str
+
+
+class BackgroundGenFill(BaseModel):
+    height: int = Field(..., gt=0)
+    width: int = Field(..., gt=0)
+    crop_mode: Literal["pad_resize", "pad_extract"] = "pad_resize"
+    prompt: Optional[str] = None
+
+
+class AIDropShadow(BaseModel):
+    az: Optional[int] = Field(215, ge=0)
+    el: Optional[int] = Field(45, ge=0)
+    st: Optional[int] = Field(60, ge=0)
 
 
 class AITransformOptions(BaseModel):
@@ -27,104 +48,80 @@ class AITransformOptions(BaseModel):
 
     ai_background_removal_external: bool = False
     ai_remove_background: bool = False
-    ai_edit: bool = False
-    ai_changebg: bool = False
-    ai_bg_genfill: bool = False
-    ai_drop_shadow: bool = False
     ai_retouch: bool = False
     ai_upscale: bool = False
-
-    az: Optional[int] = Field(215, ge=0)
-    el: Optional[int] = Field(45, ge=0)
-    st: Optional[int] = Field(60, ge=0)
-    prompt: Optional[str] = None
+    ai_generate_variation: bool = False
+    ai_changebg: Optional[AIChangeBackground] = None
+    ai_edit: Optional[AIEditImage] = None
+    ai_bg_genfill: Optional[BackgroundGenFill] = None
+    ai_drop_shadow: Optional[Union[bool, AIDropShadow]] = None
     encoded: bool = False
-
-    height: Optional[int] = Field(None, gt=0)
-    width: Optional[int] = Field(None, gt=0)
-    crop_mode: Literal["pad_resize", "pad_extract"] = "pad_resize"
-
-    model_config = {"extra": "ignore"}
-
-    @model_validator(mode="after")
-    def validate_ai(self) -> "AITransformOptions":
-        """
-        Enforce prompt and dimension requirements and basic compatibility.
-        """
-        if self.ai_edit and not self.prompt:
-            raise ValueError("ai_edit requires a non-empty prompt")
-
-        if self.ai_changebg and not self.prompt:
-            raise ValueError("ai_changebg requires a non-empty prompt")
-
-        if self.ai_bg_genfill:
-            if self.height is None or self.width is None:
-                raise ValueError("ai_bg_genfill requires height and width")
-            if self.crop_mode != "pad_resize":
-                raise ValueError("ai_bg_genfill requires crop_mode='pad_resize'")
-
-        if self.ai_drop_shadow:
-            if self.az is not None and self.az < 0:
-                raise ValueError("az must be >= 0")
-            if self.el is not None and self.el < 0:
-                raise ValueError("el must be >= 0")
-            if self.st is not None and self.st < 0:
-                raise ValueError("st must be >= 0")
-
-        return self
 
     def to_transform_dicts(self) -> List[Dict[str, Any]]:
         """
         Serialize validated AI options into ImageKit transformation dicts.
         """
+        dumped = self.model_dump(exclude_none=True)
         transforms: List[Dict[str, Any]] = []
-        dumped = self.model_dump()
 
-        if dumped["ai_retouch"]:
+        if self.ai_retouch:
             transforms.append({"e-retouch": True})
 
-        if dumped["ai_upscale"]:
+        if self.ai_upscale:
             transforms.append({"e-upscale": True})
 
-        if dumped["ai_background_removal_external"]:
+        if self.ai_background_removal_external:
             transforms.append({"e-removedotbg": True})
 
-        if dumped["ai_remove_background"]:
+        if self.ai_remove_background:
             transforms.append({"e-bgremove": True})
 
-        if dumped["ai_edit"]:
-            if dumped["encoded"]:
-                transforms.append({"e-edit-prompte": to_base64(dumped["prompt"] or "")})
+        if self.ai_edit:
+            prompt = dumped["ai_edit"]["prompt"]
+            if self.encoded:
+                transforms.append({"e-edit-prompte": to_base64(prompt or "")})
             else:
-                transforms.append({"e-edit-prompt": dumped["prompt"]})
+                transforms.append({"e-edit-prompt": prompt})
 
-        if dumped["ai_changebg"]:
-            if dumped["encoded"]:
-                transforms.append({"e-changebg-prompte": to_base64(dumped["prompt"] or "")})
+        if self.ai_changebg:
+            prompt = dumped["ai_changebg"]["prompt"]
+            if self.encoded:
+                transforms.append({"e-changebg-prompte": to_base64(prompt or "")})
             else:
-                transforms.append({"e-changebg-prompt": dumped["prompt"]})
+                transforms.append({"e-changebg-prompt": prompt})
 
-        if dumped["ai_bg_genfill"]:
-            genfill: Dict[str, Any] = {
-                "bg": "genfill",
-                "cm": dumped["crop_mode"],
-                "h": dumped["height"],
-                "w": dumped["width"],
-            }
-            transforms.append(genfill)
+        #  handle genfill
+        if self.ai_bg_genfill:
+            genfill_dict = self.ai_bg_genfill.model_dump(exclude_none=True)
+            genfill_params = {}
+            if "prompt" in genfill_dict:
+                prompt = genfill_dict.pop("prompt")
+                if self.encoded:
+                    genfill_params["e-genfill-prompte"] = to_base64(prompt or "")
+                else:
+                    genfill_params["e-genfill-prompt"] = prompt
 
-        if dumped["ai_drop_shadow"]:
+            genfill_params["crop_mode"] = genfill_dict.pop("crop_mode")
+            genfill_params["height"] = genfill_dict.pop("height")
+            genfill_params["width"] = genfill_dict.pop("width")
+
+            transforms.append(genfill_params)
+
+        if self.ai_generate_variation:
+            transforms.append({"e-genvar": True})
+
+        if self.ai_drop_shadow:
             shadow: Dict[str, Any] = {"e-dropshadow": True}
 
-            if not dumped["ai_background_removal_external"] and not dumped["ai_remove_background"]:
+            if (
+                not self.ai_background_removal_external
+                and not self.ai_remove_background
+            ):
                 transforms.append({"e-bgremove": True})
 
-            if dumped["az"] is not None:
-                shadow["az"] = dumped["az"]
-            if dumped["el"] is not None:
-                shadow["el"] = dumped["el"]
-            if dumped["st"] is not None:
-                shadow["st"] = dumped["st"]
+            ai_drop_shadow_params = self.ai_drop_shadow.model_dump(exclude_none=True)
+            shadow["el"] = ai_drop_shadow_params["el"]
+            shadow["st"] = ai_drop_shadow_params["st"]
 
             transforms.append(shadow)
 
@@ -167,20 +164,14 @@ class AITransforms:
         self,
         ai_background_removal_external: bool = False,
         ai_remove_background: bool = False,
-        ai_edit: bool = False,
-        ai_changebg: bool = False,
-        ai_bg_genfill: bool = False,
-        ai_drop_shadow: bool = False,
         ai_retouch: bool = False,
         ai_upscale: bool = False,
-        az: Optional[int] = 215,
-        el: Optional[int] = 45,
-        st: Optional[int] = 60,
-        prompt: Optional[str] = None,
+        ai_generate_variation: bool = False,
+        ai_changebg: Optional[AIChangeBackground] = None,
+        ai_edit: Optional[AIEditImage] = None,
+        ai_bg_genfill: Optional[BackgroundGenFill] = None,
+        ai_drop_shadow: Optional[Union[bool, AIDropShadow]] = None,
         encoded: bool = False,
-        height: Optional[int] = None,
-        width: Optional[int] = None,
-        crop_mode: Literal["pad_resize", "pad_extract"] = "pad_resize",
     ) -> List[Dict[str, Any]]:
         """
         Validate and normalize ImageKit AI transformation parameters.
@@ -219,65 +210,63 @@ class AITransforms:
 
         Image modification
         ~~~~~~~~~~~~~~~~~~
-        ai_edit : bool
-            Modifies an image using a text prompt.
-            Requires `prompt`.
-            - `e-edit-prompt` (plain text)
-            - `e-edit-prompte` (base64-encoded)
+        ai_edit : Optional[AIEditImage]
+            Edits the image using AI using defined prompt.
+            It can edit image based on the prompt provided. Colorize,
+            add objects, remove objects etc. Free form edit using AI.
+            Requires `prompt` in the dictionary.
+            Eg: {"ai_edit": {"prompt": "Add a red hat on the person"}}
 
-        ai_changebg : bool
-            Changes the background using a text prompt.
-            Requires `prompt`.
-            - `e-changebg-prompt`
-            - `e-changebg-prompte`
+        ai_changebg : Optional[AIChangeBackground]
+            Changes the background using a text prompt using AI.
+            Free form background change. It can change background to
+            any scenario based on the prompt provided. Not to be confused by
+            background removal. It does not remove background but can replace background.
+            Requires {`prompt`} in the dictionary
+            Eg: {"ai_changebg": {"prompt": "Change background to a beach"}}
 
-        ai_bg_genfill : bool
-            Extends or fills missing image areas using generative AI.
-            Requires:
-            - `crop_mode='pad_resize'`
-            Optional:
-            - `height`
-            - `width`
+        ai_bg_genfill : Optional[BackgroundGenFill]
+            Performs generative fill on the background using a text prompt.
+            This  transformation extends an image beyond its original boundaries,
+            allowing you to add new visual elements in an image while preserving
+            the original image content.
+            Requires {`prompt`, `height`, and `width`, `crop_mode`} in the dictionary.
+            Eg: {"ai_bg_genfill": {"prompt": "A scenic mountain view",
+                                   "height": 800,
+                                   "width": 600,
+                                   "crop_mode": "pad_resize"}}
+
+        ai_generate_variation : bool
+            Generates variations of the input image using AI.
+            Eg. {"ai_generate_variation": True}
 
         Visual effects
         ~~~~~~~~~~~~~~
-        ai_drop_shadow : bool
+        ai_drop_shadow : Optional[AIDropShadow]
             Adds an AI-generated drop shadow.
             The input image **must have a transparent background**.
             Optional parameters:
             - az (azimuth angle, >= 0)
             - el (elevation angle, >= 0)
             - st (shadow strength, >= 0)
+            Eg: {"ai_drop_shadow": {"az": 120, "el": 30, "st": 70}}
+            Or simply: {"ai_drop_shadow": True}
 
         Enhancement
         ~~~~~~~~~~~
         ai_retouch : bool
             Improves visual quality by removing blemishes and artifacts.
+            Eg. {"ai_retouch": True}
 
         ai_upscale : bool
             Increases image resolution using AI.
+            Eg. {"ai_upscale": True}
 
         Common parameters
         -----------------
-        prompt : str, optional
-            Text prompt required for edit, background change, and generation.
-            Must be non-empty.
-
         encoded : bool, default False
             If True, prompt is assumed to be base64-encoded.
             If False, prompt will be encoded automatically when required.
-
-        height : int, optional
-            Output height for generative fill.
-            Must be > 0.
-
-        width : int, optional
-            Output width for generative fill.
-            Must be > 0.
-
-        crop_mode : {"pad_resize","pad_extract"}, default "pad_resize"
-            Crop mode used for compatibility checks.
-            `bg-genfill` requires `pad_resize`.
 
         Returns
         -------
@@ -298,20 +287,14 @@ class AITransforms:
         options = AITransformOptions(
             ai_background_removal_external=ai_background_removal_external,
             ai_remove_background=ai_remove_background,
-            ai_edit=ai_edit,
-            ai_changebg=ai_changebg,
-            ai_bg_genfill=ai_bg_genfill,
-            ai_drop_shadow=ai_drop_shadow,
             ai_retouch=ai_retouch,
             ai_upscale=ai_upscale,
-            az=az,
-            el=el,
-            st=st,
-            prompt=prompt,
+            ai_generate_variation=ai_generate_variation,
+            ai_changebg=ai_changebg,
+            ai_edit=ai_edit,
+            ai_bg_genfill=ai_bg_genfill,
+            ai_drop_shadow=ai_drop_shadow,
             encoded=encoded,
-            height=height,
-            width=width,
-            crop_mode=crop_mode,
         )
 
         return options.to_transform_dicts()

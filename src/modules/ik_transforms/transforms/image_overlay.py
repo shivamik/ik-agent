@@ -176,7 +176,7 @@ class ImageOverlay(BaseModel):
 
         return self
 
-    def to_overlay_dict(self) -> Dict[str, Any]:
+    def to_transform_dict(self) -> Dict[str, Any]:
         """
         Convert the overlay model into the nested dict structure expected by
         the ImageKit URL builder.
@@ -282,7 +282,7 @@ class ImageOverlay(BaseModel):
         # NESTED OVERLAY
         # -------------------------------------------------
         if self.child is not None:
-            child_overlay = self.child.to_overlay_dict()
+            child_overlay = self.child.to_transform_dict()
             if child_overlay:
                 transform["overlay"] = child_overlay["overlay"]
 
@@ -337,12 +337,12 @@ class ImageOverlayTransforms:
         self,
         image_path: Optional[str] = None,
         encoded: bool = False,
-        w: Optional[NumberOrExpression] = None,
-        h: Optional[NumberOrExpression] = None,
-        ar: Optional[NumberOrExpression] = None,
-        c: Optional[Literal["force", "at_max", "at_least"]] = None,
-        cm: Optional[Literal["extract", "pad_resize"]] = None,
-        fo: Optional[
+        width: Optional[NumberOrExpression] = None,
+        height: Optional[NumberOrExpression] = None,
+        aspect_ratio: Optional[NumberOrExpression] = None,
+        crop: Optional[Literal["force", "at_max", "at_least"]] = None,
+        crop_mode: Optional[Literal["extract", "pad_resize"]] = None,
+        focus: Optional[
             Literal[
                 "face",
                 "center",
@@ -356,7 +356,7 @@ class ImageOverlayTransforms:
                 "bottom_right",
             ]
         ] = None,
-        z: Optional[NumberOrExpression] = None,
+        zoom: Optional[NumberOrExpression] = None,
         x: Optional[NumberOrExpression] = None,
         y: Optional[NumberOrExpression] = None,
         xc: Optional[NumberOrExpression] = None,
@@ -364,7 +364,7 @@ class ImageOverlayTransforms:
         layer_x: Optional[NumberOrExpression] = None,
         layer_y: Optional[NumberOrExpression] = None,
         layer_focus: Optional[str] = None,
-        q: Optional[int] = None,
+        quality: Optional[int] = None,
         dpr: Optional[Union[float, str]] = None,
         layer_mode: Optional[
             Literal["displace", "multiply", "cutout", "cutter"]
@@ -375,6 +375,31 @@ class ImageOverlayTransforms:
         """
         Build and normalize an ImageKit **image overlay** into a single overlay
         transformation dictionary.
+
+        Schema:
+            image_path?:str
+            encoded?:bool
+            width?,height?,aspect_ratio?:num|expr
+            crop?:"force"|"at_max"|"at_least"
+            crop_mode?:"extract"|"pad_resize"
+            focus?:
+                "face"|"center"|"top"|"bottom"|
+                "left"|"right"|
+                "top_left"|"top_right"|
+                "bottom_left"|"bottom_right"
+            zoom?:float
+            x?,y?,xc?,yc?:num|expr
+            layer_x?,layer_y?:num|expr
+            layer_focus?:
+                "center"|"top"|"bottom"|"left"|"right"|
+                "top_left"|"top_right"|
+                "bottom_left"|"bottom_right"
+            background?:BackgroundValue|Background
+            quality?:int
+            dpr?:float|str
+            layer_mode?:"displace"|"multiply"|"cutout"|"cutter"
+            child?:ImageOverlay
+            effects?:Effects
 
         Use this docstring as a **ground-truth parameter map** when prompting
         an LLM: all constraints, coupling rules, and defaults are documented here.
@@ -396,35 +421,35 @@ class ImageOverlayTransforms:
         -------------------------------------------------------------------------
         SIZE, CROP & FOCUS (applied to the overlay image itself)
         -------------------------------------------------------------------------
-        w:
+        width:
             Output width of the overlay image. Accepts numbers or arithmetic
             expressions (e.g. `"bw_div_2"`).
 
-        h:
+        height:
             Output height of the overlay image. Accepts numbers or arithmetic
             expressions (e.g. `"bh_mul_0.5"`).
 
-        ar:
+        aspect_ratio:
             Aspect ratio of the overlay image. Can be numeric or an arithmetic
             expression (e.g. `"16-9"` or `"iar_div_2"`).
 
-        c:
+        crop:
             Crop strategy. One of:
             - `"force"`: force resize, ignore aspect ratio
             - `"at_max"`: resize until max constraint
             - `"at_least"`: resize until minimum constraint
 
-        cm:
+        crop_mode:
             Crop mode controlling extraction or padding.
             - `"extract"`: crop from the image
             - `"pad_resize"`: resize and pad with background
 
-        fo:
+        focus:
             Focus area for cropping.
             Supports relative anchors (`center`, `top_left`, etc.) and
             intelligent options like `"face"`.
 
-        z:
+        zoom:
             Zoom factor for object/face-aware cropping.
             **Onlayer_y valid when `fo="face"`**.
             Values < 1 zoom out, values > 1 zoom in.
@@ -463,7 +488,7 @@ class ImageOverlayTransforms:
             - For Gradient background use
                 background: {"mode": "dominant", "pallete_size": Literal[2,4]=2}
 
-        q:
+        quality:
             Output quality for lossy formats (1–100).
 
         dpr:
@@ -551,13 +576,13 @@ class ImageOverlayTransforms:
         overlay = ImageOverlay(
             image_path=image_path,
             encoded=encoded,
-            w=w,
-            h=h,
-            ar=ar,
-            c=c,
-            cm=cm,
-            fo=fo,
-            z=z,
+            width=width,
+            height=height,
+            aspect_ratio=aspect_ratio,
+            crop=crop,
+            crop_mode=crop_mode,
+            focus=focus,
+            zoom=zoom,
             x=x,
             y=y,
             xc=xc,
@@ -565,10 +590,11 @@ class ImageOverlayTransforms:
             layer_x=layer_x,
             layer_y=layer_y,
             layer_focus=layer_focus,
-            q=q,
+            quality=quality,
             dpr=dpr,
             layer_mode=layer_mode,
             child=child,
+            effects=effects,
         )
 
-        return overlay.to_overlay_dict()
+        return overlay.to_transform_dict()

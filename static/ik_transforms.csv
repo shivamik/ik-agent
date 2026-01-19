@@ -1115,7 +1115,7 @@ x position of cm_extract,"x, y, x_center, y_center",number,number,"## x
 * Defines center of extraction, not the edge
 * Crop fails if centered area exceeds image bounds
 * More error-prone than `x,y`
-* Affected by image auto-rotation metadata",crop,image,"**x**
+* Affected by image auto-rotation metadata","crop, position",image,"**x**
 Specifies the horizontal position of the **top-left corner** of the extracted area from the original image.
 
 **y**
@@ -1667,6 +1667,130 @@ This example shows how a prompt can guide the AI to generate specific elements i
 ```
 
 ---",ai_transform
+AI Generate Image,ai_gen_image,boolean,boolean,"
+* This is an **AI transformation** and may take longer than standard image transformations.
+* The response may return an **intermediate HTML response** with status `200` and header `is-intermediate-response:true` while processing.
+* Only **one async AI transformation** is allowed per transformation step.
+
+  * Multiple AI transformations must be **chained using `:`**, not combined using `,`.
+* If a request fails, the error response is **cached temporarily**, and retries on the same URL may require waiting.
+* Outputs are **cached indefinitely** to avoid repeated extension unit usage.
+* Most AI transformations **cannot be used inside layers**; `e-upscale` is not listed as an exception.
+* **Input image resolution must be less than 16 megapixels (16 MP)**.
+* **Output image resolution is always 16 MP**.
+* Consumes **extension units** based on your pricing plan.",ai_gen_image,ai_transformation,"Generates a new image from a text prompt using AI and stores the generated image at the specified file path.
+
+## Parameters and Defaults
+
+The following parameters are supported with `ik-genimg`:
+
+* **`prompt` (text prompt)** *(required)*
+  Describes the image to be generated.
+  Format:
+
+  * `ik-genimg-prompt-${text}`
+    Default: **No default** (required)
+
+* **`filepath` and `filename`** *(required)*
+  `ik-genimg-prompt-${text}/filepath/filename.jpg`
+  Determines where the generated image will be stored and accessed.
+  Default: **None (required)**
+
+There are **no additional AI tuning parameters** (such as style, seed, or resolution) available for `ik-genimg`.","### Example 1: Generate an image using a text prompt
+
+This example shows generating an image of a man eating a burger.
+
+```
+{
+  ""path"": ""ik-genimg-prompt-A man eating a burger/gen-burger-image.jpg""
+}
+```
+
+
+---
+
+### Example 2: Generate another version by appending a query parameter
+
+This example shows forcing regeneration by appending a random query parameter.
+
+```
+{
+  ""path"": ""ik-genimg-prompt-A man eating a burger/gen-burger-image.jpg"",
+  ""query"": ""v=3""
+}
+```
+
+---
+",ai_transform
+AI Generative Variation,ai_genvar,boolean,boolean,"* This is an **AI transformation** and may take longer than standard image transformations.
+* The response may return an **intermediate HTML response** with status `200` and header `is-intermediate-response:true` while processing.
+* Only **one async AI transformation** is allowed per transformation step.
+
+  * Multiple AI transformations must be **chained using `:`**, not combined using `,`.
+* If a request fails, the error response is **cached temporarily**, and retries on the same URL may require waiting.
+* Outputs are **cached indefinitely** to avoid repeated extension unit usage.
+* Most AI transformations **cannot be used inside layers**; `e-genvar` is not listed as an exception.
+* Consumes **extension units** based on your pricing plan.
+* Variations are **non-deterministic**; generating another variation requires changing the URL (e.g., adding a query parameter).",ai_genvar,ai_transformation,"**`e-genvar`**
+Generates AI-based visual variations of an existing image while preserving its overall structure and composition.
+
+
+## Parameters and Defaults
+
+The following parameters are supported with `e-genvar`:
+
+* **No additional parameters**
+  The transformation is applied as a single flag:
+  `e-genvar`
+  Default behavior applies automatically.","
+### Example 1: Generate a variation of an image
+
+This example shows generating a variation of an image after resizing it.
+
+```
+{
+  ""tr"": ""w-600,h-400:e-genvar""
+}
+```
+
+---
+
+### Example 2: Generate another variation using a query parameter
+
+This example shows forcing generation of a different variation by appending a random query parameter.
+
+```
+{
+  ""tr"": ""w-600,h-400:e-genvar"",
+  ""query"": ""v=3""
+}
+```
+
+---
+
+## Details and Examples Using Other Parameters
+
+### Combining resize and variation generation
+
+This example demonstrates resizing an image before generating a variation.
+
+```
+{
+  ""tr"": ""w-600,h-400:e-genvar""
+}
+```
+
+---
+
+### Comparing original and generated variation
+
+This example highlights the difference between the original resized image and its AI-generated variation.
+
+```
+{
+  ""tr"": ""w-600,h-400""
+}
+```",ai_transform
 Retouch ,ai_retouch,boolean,boolean,"* This is an **AI transformation** and may take longer than standard image transformations.
 * The response may return an **intermediate HTML response** with status `200` and header `is-intermediate-response:true` while processing.
 * Only **one async AI transformation** is allowed per transformation step.
@@ -1751,72 +1875,1015 @@ This example highlights that the output image is automatically scaled to 16 MP r
   ""tr"": ""e-upscale""
 }
 ```",ai_transform
-AI Generative Variation,ai_genvar,boolean,boolean,"* This is an **AI transformation** and may take longer than standard image transformations.
-* The response may return an **intermediate HTML response** with status `200` and header `is-intermediate-response:true` while processing.
-* Only **one async AI transformation** is allowed per transformation step.
+Image Path,image_path,string,path (str),Required,image_overlay,image_overlay,Path of the overlay image from ImageKit media library.,"```
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+}
+```
+",image_overlay
+Encoded,encoded,boolean,boolean,,image_overlay,image_overlay,Whether to encode image_path,"{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+     ""encoded"": True
+}",image_overlay
+Layer X position,layer_x,"number, arithmetic_expression",Number and arithmetic expression,"* Accepts:
 
-  * Multiple AI transformations must be **chained using `:`**, not combined using `,`.
-* If a request fails, the error response is **cached temporarily**, and retries on the same URL may require waiting.
-* Outputs are **cached indefinitely** to avoid repeated extension unit usage.
-* Most AI transformations **cannot be used inside layers**; `e-genvar` is not listed as an exception.
-* Consumes **extension units** based on your pricing plan.
-* Variations are **non-deterministic**; generating another variation requires changing the URL (e.g., adding a query parameter).",ai_genvar,ai_transformation,"**`e-genvar`**
-Generates AI-based visual variations of an existing image while preserving its overall structure and composition.
+  * `int` (positive or negative)
+  * Arithmetic expressions (`bw_mul_0.2`, etc)
+* Negative numbers are represented internally as `N<value>`","image_overlay, position",image_overlay,Horizontal position of the overlay relative to base image.,"```
+# Positive
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_x"": 35,
+}
+```
 
+```
+# Negative
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_x"": -35,
+}
+```
 
-## Parameters and Defaults
+```
+# Expression
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_x"": ""bw_mul_0.2"",
+}
+```",image_overlay
+Layer Y position,layer_y,"number, arithmetic_expression",Number and arithmetic expression,"**Constraints**
 
-The following parameters are supported with `e-genvar`:
+* Same rules as `layer_x`
+* Accepts arithmetic expressions","image_overlay, position",image_overlay,Vertical position of the overlay relative to base image.,"```
+# Positive
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_y"": 35,
+}
+```
 
-* **No additional parameters**
-  The transformation is applied as a single flag:
-  `e-genvar`
-  Default behavior applies automatically.","
-### Example 1: Generate a variation of an image
+```
+# Negative
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_y"": -35,
+}
+```
 
-This example shows generating a variation of an image after resizing it.
+```
+# Expression
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_y"": ""bw_mul_0.2"",
+}
+```",image_overlay
+Height,height,"number, arithmetic_expression",Number and arithmetic expression,"**Constraints**
+
+* Accepts arithmetic expressions
+* Works with `crop_mode`","image_overlay, sizing",image_overlay,Height of the overlay image.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""height"": ""bh_div_2"",
+    ""crop_mode"": ""pad_resize"",
+}
+```",image_overlay
+Crop mode,crop_mode,"number, arithmetic_expression",Number and arithmetic expression,"
+* Allowed values:
+
+  * `""pad_resize""`
+  * `""extract""`
+* Required for background fill (`background`)","image_overlay, sizing",image_overlay,Controls padding vs extraction behavior.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""width"": 400,
+    ""height"": 400,
+    ""crop_mode"": ""pad_resize"",
+}
+```",image_overlay
+Background,background,"string, custom_parameters",Number and arithmetic expression,"
+* Requires `crop_mode`=""pad_resize""` or crop_mode = ""pad_extract""
+* Accepts:
+
+  * color names (`red`)
+  * hex (`FF0000`)
+  * hex + opacity (`FF000080`)
+  * ""dominant""
+  * For blurred background requires a dict of blur_intensity, brightness
+  * For Gradient background requires dict of `mode` and `pallete_size`","image_overlay, background",image_overlay,Background color for padded areas.,"Example 1: A simple solid background
 
 ```
 {
-  ""tr"": ""w-600,h-400:e-genvar""
+    ""image_path"": ""women-dress.jpeg"",
+    ""width"": 400,
+    ""height"": 400,
+    ""ccrop_mode"": ""pad_resize"",
+    ""background"": ""yellow"",
+}
+```
+
+Example 2: A background with transparent layer image
+```
+{
+    ""image_path"": ""lipstick_1M.png"",
+    ""height"": 400,
+    ""width"": 400,
+    ""crop_mode"": ""pad_resize"",
+    ""background"": ""yellow"",
+}
+```
+
+Example 3: Image Layer blurred background
+```
+{
+    ""image_path"": ""sample_image.jpg"",
+    ""height"": 400,
+    ""width"": 400,
+    ""crop_mode"": ""pad_resize"",
+    ""background"": {
+        ""blur_intensity"": 50,
+        ""brightness"": 50,
+    },
+}
+```
+
+Example 4: dominant background
+```
+{
+    ""image_path"": ""sample_image.jpg"",
+    ""height"": 400,
+    ""width"": 400,
+    ""crop_mode"": ""pad_resize"",
+    ""background"": ""dominant"",
+}
+```
+
+Example 5: # Image layer with gradient background
+```
+{
+    ""image_path"": ""sample_image.jpg"",
+    ""height"": 400,
+    ""width"": 400,
+    ""crop_mode"": ""pad_resize"",
+    ""background"": {
+        ""mode"": ""dominant"",
+        ""pallete_size"": 2,
+    },
+}
+```",image_overlay
+Grayscale,effects.grayscale,boolean,boolean,"* Boolean flag
+* Maps to `e-grayscale`","image_overlay, grayscale",image_overlay,Converts overlay image to grayscale.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""w"": 400,
+    ""h"": 400,
+    ""cm"": ""pad_resize"",
+    ""bg"": ""yellow"",
+    ""e_grayscale"": True,
+}
+```",image_overlay
+Border,effects.border,string,`<width>_<color>`,"* Format: `<width>_<color>`
+* Color can be hex or name
+","image_overlay, border",image_overlay,Adds a border around the overlay image.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""h"": 400,
+    ""b"": ""10_red"",
+}
+```",image_overlay
+Trim,effects.trim,boolean,boolean,"* Default: `true`
+* Use `false` to disable trimming","image_overlay, trim",image_overlay,Controls automatic trimming of overlay image.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""t"": False,
+}
+```",image_overlay
+Layer focus (relative positioning),layer_focus,string,"* Allowed values:
+
+  * `center`
+  * `top`, `bottom`, `left`, `right`
+  * `top_left`, `top_right`
+  * `bottom_left`, `bottom_right`
+* Used heavily in nested layers
+","* Allowed values:
+
+  * `center`
+  * `top`, `bottom`, `left`, `right`
+  * `top_left`, `top_right`
+  * `bottom_left`, `bottom_right`
+* Used heavily in nested layers
+","image_overlay, crop, focus",image_overlay,Positions the layer relative to its parent container.,"
+```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""height"": 400,
+    ""layer_focus"": ""bottom_left"",
+}
+```",image_overlay
+Zoom,effects.zoom,float,float,"
+* **Only valid with `fo=""face""`**
+* Float > 0
+* Default = `1.0`","image_overlay, crop",image_overlay,Zooms into cropped region.,"```
+{
+    ""image_path"": ""person.jpeg"",
+    ""focus"": ""face"",
+    ""zoom"": 1.3,
+}
+```",image_overlay
+Extract coordinates,"`x`, `y`, `xc`, `yc`","number, arithmetic_expression",Number and arithmetic expression,"* **Only valid with `cm=""extract""`**
+* Mutually exclusive:
+
+  * (`x`, `y`) vs (`xc`, `yc`)","image_overlay, position",image_overlay,Used to define exact crop region.,"```
+{
+    ""image_path"": ""women-dress.jpeg"",
+    ""crop_mode"": ""extract"",
+    ""width"": 300,
+    ""height"": 300,
+    ""x"": 50,
+    ""y"": 100,
+}
+```",image_overlay
+Solid Color Overlay,image_path,string,ik_canvas,"image_path = 'ik_canvas'
+* height and width required
+* `background` is requried","solid_color_overlay, image_overlay",image_overlay,Used to make solid color overlay,"## 1. Basic solid color block
+**Params**
+
+```
+{
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""FF0000"",
+    ""width"": 300,
+    ""height"": 100,
 }
 ```
 
 ---
 
-### Example 2: Generate another variation using a query parameter
+## 2. Solid color block with position control
 
-This example shows forcing generation of a different variation by appending a random query parameter.
+**Params**
 
 ```
 {
-  ""tr"": ""w-600,h-400:e-genvar"",
-  ""query"": ""v=3""
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""yellow"",
+    ""width"": 200,
+    ""height"": 200,
+    ""layer_x"": 35,
 }
 ```
 
 ---
 
-## Details and Examples Using Other Parameters
 
-### Combining resize and variation generation
-
-This example demonstrates resizing an image before generating a variation.
+**Params**
 
 ```
 {
-  ""tr"": ""w-600,h-400:e-genvar""
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""yellow"",
+    ""width"": 200,
+    ""height"": 200,
+    ""layer_x"": -35,
 }
 ```
 
 ---
 
-### Comparing original and generated variation
+### LY = 80% of base height
 
-This example highlights the difference between the original resized image and its AI-generated variation.
+**Doc example**
 
 ```
 {
-  ""tr"": ""w-600,h-400""
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""yellow"",
+    ""width"": 200,
+    ""height"": 200,
+    ""layer_y"": ""bh_mul_0.8"",
 }
-```",ai_transform
+```
+
+---
+
+## 3. Gradient effect on solid color block
+
+**Params**
+
+```
+{
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""FF0000"",
+    ""width"": 300,
+    ""height"": 100,
+    ""effects"": {
+        ""gradient"": {
+            ""linear_direction"": ""top_left"",
+            ""from_color"": ""lightskyblue"",
+            ""to_color"": ""mintcream"",
+            ""stop_point"": 1,
+        }
+    },
+}
+```
+
+---
+
+## 4. Rounded solid color block
+
+```
+{
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""red"",
+    ""width"": 200,
+    ""height"": 200,
+    ""effects"": {""radius"": ""max""},
+}
+```
+
+---
+
+## 8. Solid block with expressions for size
+
+**Params**
+
+```
+{
+    ""image_path"": ""ik_canvas"",
+    ""background"": ""red"",
+    ""width"": ""bw_mul_0.8"",
+    ""height"": ""bh_div_2"",
+}
+```",image_overlay
+Text,text,string,string,,text_overlay,text_overlay,The text string to overlay on the base image.,"```
+{
+    ""text"": ""Overlay made easy""
+}
+```",text_overlay
+Position,"lx, ly","number, arithmetic_expression",Number and arithmetic expression,"* Accepts numbers, negative numbers, or arithmetic expressions
+* Negative values are serialized using the `N` prefix
+* Arithmetic expressions are evaluated relative to base image width","text_overlay, position",text_overlay,Controls the horizontal position of the text layer relative to the base image.,"```
+{
+    ""text"": ""Overlay made easy"",
+    ""layer_x"": 35,
+    ""layer_y"": 40
+}
+```
+
+Negative Values
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""layer_x"": -35
+}
+```
+
+Arithmetic Expression
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""layer_x"": 'bw_mul_0.1',
+    ""layer_y"": ""bh_mul_0.1""
+}
+```",text_overlay
+Width,width,"number, arithmetic_expression",Number and arithmetic expression,"* Accepts positive numbers or arithmetic expressions
+* Height is calculated automatically based on wrapped lines
+* Text layer dimensions must not exceed **16,383 px** in any direction","text_overlay, sizing",text_overlay,Maximum width of the text box. Text wraps automatically when this width is exceeded.,"Width
+
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""lx"": 'bw_mul_0.1',
+     ""width"": 150
+}
+
+Width with expressions
+
+```
+{
+""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""layer_x"": 'bw_mul_0.1',
+     ""width"": 'bw_mul_0.5'
+}
+```",text_overlay
+Font Size,font_size,"number, arithmetic_expression",Number and arithmetic expression,"* Accepts positive numbers or arithmetic expressions
+* Expression values are relative to base image dimensions","text_overlay, font",text_overlay,Controls the font size of the overlaid text.,"font_size with integer value
+
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""layer_x"": 'bw_mul_0.1',
+     ""width"": 150
+}
+
+font_size with arithmetic expression - 10% of base image width
+
+```
+{
+""text"": ""Overlay made easy"",
+    ""font_size"": ""bw_mul_0.1"",
+}
+```",text_overlay
+Font Color,color,string,"RGB, RGBA, color name","* Accepts:
+
+  * RGB hex (`FF0000`)
+  * RGBA hex with opacity (`FFAABB50`)
+  * Named colors (`red`)
+* For RGBA, last two digits control opacity (`00`–`99`)","text_overlay, font, color",text_overlay,Sets the color of the text.,"Setting red Color
+
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": ""bw_mul_0.1"",
+    ""color"": ""red""
+}
+```",text_overlay
+Inner Alignment,inner_alignment,string,"left, right, center","* Allowed values: `left`, `center`, `right`
+* Default is `center`","text_overlay, font, alignment",text_overlay,Controls horizontal alignment of text **within** the text box.,"
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": ""bw_mul_0.1"",
+    ""color"": ""red"",
+    ""inner_alignement"": ""left""
+}
+```",text_overlay
+Padding,padding,"number, string","number, `top_right_bottom_left`","* Accepts:
+
+  * Single positive integer
+  * CSS-style shorthand using `_`
+  * Arithmetic expressions
+* Shorthand order: `top_right_bottom_left`","text_overlay, font",text_overlay,Adds space around the text inside its background box.,"padding 
+
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": 10,
+    ""background"": ""white""
+}
+```
+
+padding with top_right_botton_left
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": '25_50_75_100',
+    ""background"": ""white"",
+}
+```
+
+padding with top_horizontal_bottom
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": '25_75_60',
+    ""background"": ""white"",
+}
+```
+
+padding with vertical_horizontal
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": '25_75',
+    ""background"": ""white"",
+}
+```",text_overlay
+Alpha,alpha,number,1-9,"* Integer values only
+* Range: **1 (least opaque)** → **9 (most opaque)**","text_overlay, opacity",text_overlay,Controls transparency of the entire text layer.,"alpha - transparency
+
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": 40,
+    ""background"": ""white"",
+    ""width"": 300,
+    ""alpha"": 7 # 70 % opacity
+}
+```",text_overlay
+Typography,typography,string,"""b"", ""i"", ""strikethrough"", ""b_i"", ""b_strikethrough"", ""i_strikethrough"", ""b_i_strikethrough"",","Allowed value
+
+""b"", ""i"", ""strikethrough"", ""b_i"", ""b_strikethrough"", ""i_strikethrough"", ""b_i_strikethrough"",","text_overlay, typography",text_overlay,Applies typographic styling to the text.,"Bold
+
+
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": 25,
+    ""background"": ""white"",
+    ""typography"": 'b'
+```",text_overlay
+Font Family,font_family,string,path of custom font or allowed values in font,"Allowed value for font
+
+- ""AbrilFatFace"", ""Amaranth"", ""Arvo"", ""Audiowide"", ""Chivo"", ""Crimson Text"", ""exo"", ""Fredoka One"", ""Gravitas One"", ""Kanit"", ""Lato"", ""Lobster"", ""Lora"", ""Monoton"", ""Montserrat"", ""PT Mono"", ""PT_Serif"", ""Open Sans"", ""Roboto"", ""Old Standard"", ""Ubuntu"", ""Vollkorn""
+
+Custom font
+- /path/to/font.ttf","text_overlay, font",text_overlay,Specifies the font used to render the text.,"Supported font
+
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": 25,
+    ""background"": ""white"",
+    ""font_family"": 'Monoton'
+    # ""font_family"": '/fonts/v1.2/Poppins-Regular_Q15GrYWmL.ttf'
+}
+```
+
+Custom Font
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""padding"": 25,
+    ""background"": ""white"",
+    ""font_family"": 'love_days.ttf'
+}
+```",text_overlay
+Line Height ,line_height,"number, arithmetic_expression",Number and arithmetic expression,"* Only applies when text wraps
+* Accepts positive numbers or arithmetic expressions","text_overlay, sizing",text_overlay,Controls spacing between lines when text wraps across multiple lines.,"Line Height
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""width"": 150,
+    ""font_size"": 45,
+    ""background"": ""white"",
+    ""line_height"": 20,
+}
+```",text_overlay
+Flip,flip,string,"h, v, h_v","* Allowed values:
+
+  * `h` → horizontal
+  * `v` → vertical
+  * `h_v` → both directions","text_overlay, flip",text_overlay,Flips or mirrors the text layer.,"```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 45,
+    ""flip"": ""h""
+}
+```",text_overlay
+layer_mode,string,string,"`displace`, `cutter`, `cutout` and `multiply`","* Image Overlay Allowed values:
+`displace`, `cutter`, `cutout` and `multiply`
+
+`displace` layer mode require either or both of `x` and `y`","image_overlay, layer mode",image_overlay,"Multiply
+Blends the overlay layer with the base image using a multiply blending operation.
+Pixel values of the overlay and base image are multiplied together, producing a
+darker result where the layers overlap.
+
+For text overlays, the text is first rendered as an image and then multiplied
+with the base image.
+
+---
+Cutout 
+Creates transparent areas in the base image using the overlay layer as an
+inverse transparency mask.
+
+Where the overlay layer is opaque, the base image becomes transparent.
+Where the overlay layer is transparent, the base image remains unchanged.
+
+For text overlays, the rendered text acts as the transparency mask.
+
+---
+Cutter
+Masks the base image using the overlay layer, keeping only the areas where the
+overlay layer is opaque and discarding all other areas.
+
+Unlike cutout mode, the output image dimensions match the overlay layer rather
+than the base image.
+
+For text overlays, the rendered text defines the visible shape of the output.
+
+---
+Displace
+Distorts the base image using the overlay layer as a displacement map.
+The displacement map’s pixel values control how pixels in the base image are
+shifted horizontally and vertically.
+
+Red channel controls horizontal displacement
+
+Green channel controls vertical displacement
+
+Channel values:
+
+128 → no displacement
+
+<128 → negative displacement (left or up)
+
+128 → positive displacement (right or down)","Layer modes in image_overlay
+
+Example 1: Displace layer_mode. image_path is the path for displacement_map
+
+```
+{
+    ""image_path"": ""radialize.jpeg"",
+    ""layer_mode"": ""displace"",
+    ""y"": 100 
+}
+```
+
+Example 2: Cutout layer mode 
+
+```
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_mode"": ""cutout"",
+}
+```
+
+Example 3: Cutter
+```
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_mode"": ""cutter"",
+}
+```
+
+Example 4: Multiply Layer mode
+```
+{
+    ""image_path"": ""logo-white_SJwqB4Nfe.png"",
+    ""layer_mode"": ""multiply"",
+}
+```",image_overlay
+layer_mode,string,string,"`cutter`, `cutout` and `multiply`","* Text Overlay Allowed values:
+`cutter`, `cutout` and `multiply`
+
+
+","text_overlay, layer mode",text_overlay,"Multiply
+Blends the overlay layer with the base image using a multiply blending operation.
+Pixel values of the overlay and base image are multiplied together, producing a
+darker result where the layers overlap.
+
+For text overlays, the text is first rendered as an image and then multiplied
+with the base image.
+
+---
+Cutout 
+Creates transparent areas in the base image using the overlay layer as an
+inverse transparency mask.
+
+Where the overlay layer is opaque, the base image becomes transparent.
+Where the overlay layer is transparent, the base image remains unchanged.
+
+For text overlays, the rendered text acts as the transparency mask.
+
+---
+Cutter
+Masks the base image using the overlay layer, keeping only the areas where the
+overlay layer is opaque and discarding all other areas.
+
+Unlike cutout mode, the output image dimensions match the overlay layer rather
+than the base image.
+
+For text overlays, the rendered text defines the visible shape of the output.
+
+---
+Displace
+Distorts the base image using the overlay layer as a displacement map.
+The displacement map’s pixel values control how pixels in the base image are
+shifted horizontally and vertically.
+
+Red channel controls horizontal displacement
+
+Green channel controls vertical displacement
+
+Channel values:
+
+128 → no displacement
+
+<128 → negative displacement (left or up)
+
+128 → positive displacement (right or down)","Layer modes in text_overlays
+
+Example 1: Multiply layer mode
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 60,
+    ""layer_mode"": ""multiply"",
+    ""color"": ""red"",
+    ""typography"": ""b"",
+}
+```
+
+Example 2: Cutout layer mode
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 60,
+    ""layer_mode"": ""cutout"",
+    ""typography"": ""b"",
+}
+```
+Example 3: Cutter layer mode: Text with color as base image as color
+```
+{
+    ""text"": ""Overlay made easy"",
+    ""font_size"": 60,
+    ""color"": ""red"",
+    ""typography"": ""b"",
+    ""layer_mode"": ""cutter"",
+}
+```",text_overlay
+Contrast,contrast,boolean,boolean,"* Cannot be configured or tuned
+* Applied globally to the image
+* Can be chained with other transformations",contrast,"effects_and_enhancements, image_overlay, text_overlay","Automatically enhances image contrast by stretching pixel intensity values to the full available range, making dark areas darker and bright areas brighter.","# Using contrast
+```
+{
+    ""contrast"": True
+}
+```",effects_and_enhancement
+Sharpen,sharpen,boolean,boolean,"* Excessive values may cause artifacts
+* Less precise than `unsharp mask`
+* Parameter must be a positive number",sharpen,"effects_and_enhancements, image_overlay","* Excessive values may cause artifacts
+* Less precise than `e-usm`
+* Parameter must be a positive number","# Using sharpen
+```
+{
+    ""sharpen"": True,
+}
+```
+
+# Using sharpen with custom value
+```
+{
+    ""sharpen"": 10,
+}
+```",effects_and_enhancement
+Unsharp Mask,unsharp_mask,custom_parameters,"Syntax:
+`e-usm-<radius>-<sigma>-<amount>-<threshold>`
+
+* `radius`: positive float
+* `sigma`: positive float
+* `amount`: positive float
+* `threshold`: positive float","* All 4 parameters are required
+* Only **positive floating-point values** allowed
+* More computationally expensive than `e-sharpen`",unsharp mask,"effects_and_enhancements, image_overlay",Applies Unsharp Masking (USM) for advanced sharpening with better perceptual quality.,"# unsharp mask with custom params value
+```
+{
+    ""unsharp_mask"": {
+        ""radius"": 2,
+        ""sigma"": 2,
+        ""amount"": 0.8,
+        ""threshold"": 0.024
+    },
+}
+```",effects_and_enhancement
+Shadow,shadow,"custom_parameters, boolean","Boolean 
+
+OR
+
+Configurable parameters (order-independent, `_` separated):
+
+* `blur-<0–15>` → blur
+* `saturation-<0–100>` → saturation
+* `x_offset-<0–100 | N0–N100>` → x offset (% width)
+* `y_offset-<0–100 | N0–N100>` → y offset (% height)","* Works **only on images ≤ 2MP**
+* Larger images must be resized before applying
+* Requires transparent background to be visually meaningful
+* Negative values must be prefixed with `N`",shadow,"effects_and_enhancements, image_overlay",Adds a drop shadow beneath non-transparent pixels of an image with a transparent background.,"# Shadow effect
+```
+{
+    ""shadow"": True
+}
+```
+
+# Shadow with custom paramters
+```
+{
+    ""shadow"": {
+        'blur': 15,
+        'saturation': 40,
+        'x_offset': 10,
+        'y_offset': -5,
+    }
+}
+```",effects_and_enhancement
+Gradient,gradient,"custom_parameters, boolean","Boolean
+OR
+**Parameters:**
+
+* `ld` (linear direction):
+
+  * Integer `0–359`
+  * Keywords: `top`, `top_right`, `right`, `bottom_right`, `bottom`, `bottom_left`, `left`, `topleft`
+* `from`: SVG color keyword, RGB hex, or RGBA hex
+* `to`: SVG color keyword, RGB hex, or RGBA hex
+* `sp` (stop point):
+
+  * Float `0.01–0.99` (percentage)
+  * Integer `>=1` (pixels)
+  * Arithmetic expression (e.g. `ih_div_2`)
+
+Defaults:
+
+* `ld`: `180` / `bottom`
+* `from`: `FFFFFF`
+* `to`: `00000000`
+* `sp`: `1`
+
+","* Parameters are optional but must follow correct types
+* Color alpha must be encoded as last 2 hex digits
+* Can be used as:
+
+  * Base image effect
+  * Overlay layer
+  * Background underlay (with layers)",gradient,effects_and_enhancements,"Applies a linear gradient overlay or background with configurable colors, direction, and stop point.","# gradient with default params
+```
+{
+    ""gradient"": True
+}
+```
+
+
+# gradient with custom parameters
+```
+{
+    ""gradient"": {
+        'linear_direction': 45,
+        'from_color': 'FF000000',
+        'to_color': 'FFFFFF50',
+        'stop_point': 0.5,
+    }
+}
+```
+
+# gradient to top direction
+
+```
+{
+    ""gradient"": {
+        'linear_direction': 'top',
+        'from_color': 'green',
+        'to_color': '00FF0010',
+        'stop_point': 1,
+    }
+}
+```",effects_and_enhancement
+Grayscale,grayscale,boolean,,"* No configuration options
+* Fully removes color information",grayscale,"effects_and_enhancements, image_overlay",Converts the image to grayscale.,"# grayscale images
+
+```
+{
+    ""grayscale"": True
+}
+```",effects_and_enhancement
+Perspective Distort Transform,perspective_distort,custom_parameters,"x1': 100,
+        'y1': 100,
+        'x2': 700,
+        'y2': -100,
+        'x3': 600,
+        'y3': 600,
+        'x4': 0,
+        'y4': 600,","* All 8 values are required
+* Coordinates are clockwise from top-left
+* No arithmetic expressions supported",distort,"effects_and_enhancements, image_overlay",,"# Perspective distort transform with custom coordinates`
+```
+{
+    ""perspective_distort"": {
+        'x1': 100,
+        'y1': 100,
+        'x2': 700,
+        'y2': -100,
+        'x3': 600,
+        'y3': 600,
+        'x4': 0,
+        'y4': 600,
+    }
+}
+```",effects_and_enhancement
+Arc Distort,arc_distort,custom_parameters,`degress` is required,* degrees param is required,distort,"image_overlay, effects_and_enhancements",Curves the image upward or downward.,"# Arc distort
+
+{
+    ""arc_distort"": {
+        'degrees': -30,
+    }
+}",effects_and_enhancement
+Trim,trim,"boolean, number","* True
+* `-<1–99>` → threshold","* Best suited for solid or uniform backgrounds
+* Higher threshold trims more aggressively",trim,"effects_and_enhancements, image_overlay",Removes solid or near-solid background pixels around a central object.,"# trim with default params
+```
+{
+    ""trim"": True
+}
+```
+
+# trim with 5 threshold
+```
+{
+    ""trim"": 5
+}
+```
+
+# trim with 50 threshold
+```
+{
+    ""trim"": 50
+}
+```
+",effects_and_enhancement
+Blur,blur,number,* number 1-100,"* Integer values only
+* Higher values significantly increase blur radius",blur,"text_overlay, image_overlay, effects_and_enhancements",Applies Gaussian blur to the image.,,effects_and_enhancement
+Border,border,custom_parameters,"* border_width -> Number and arithmetic expression
+* color -> Color hex, svg color","* Width expression evaluated before rendering
+* Color alpha not supported directly",border,"text_overlay, image_overlay, effects_and_enhancements",Adds a border of specified width and color around the image.,"# blur with width 20 and custom rgba color
+```
+{
+    ""border"": {
+        ""border_width"": 20,
+        ""color"": ""FF00FF99""
+    }
+}
+```
+
+# blur with width 20 and red color
+```
+{
+    ""border"": {
+        ""border_width"": 20,
+        ""color"": ""red""
+    }
+}
+```",effects_and_enhancement
+Rotate,rotate,custom_parameters,"* `<number>` 
+* `rt-auto`","* `auto` relies on EXIF metadata
+* Rotation occurs after resizing",rotate,"text_overlay, image_overlay, effects_and_enhancements","Rotates the image clockwise, counter-clockwise, or automatically using EXIF orientation.","# rotate with auto
+```
+{
+    ""rotate"": ""auto""
+}
+```
+
+# rotate in clockwise direction
+```
+{
+    ""rotate"": 90
+}
+```
+
+# rotate in anti clockwise direction
+```
+{
+    ""rotate"": -90
+}
+```",effects_and_enhancement
+Flip,flip,enum,"h, v, h_v",* No partial or numeric values allowed,flip,"text_overlay, image_overlay, effects_and_enhancements","Mirrors the image horizontally, vertically, or both.","# flip by horizontal axis
+```
+{
+    ""flip"": 'h'
+}
+```
+
+# flip by horizontal and vertical axis
+```
+{
+    ""flip"": 'h_v
+}
+```",effects_and_enhancement
+Radius,radius,"string, number","* `<positive integer>`
+* `max`","* Applied **after resizing**
+* Must be chained after advanced crop modes (`c`, `cm`)",radius,"effects_and_enhancements, image_overlay, text_overlay",Rounds image corners; can produce a fully circular image.,"# radius with 50 pixel
+```
+{
+    ""radius"": 50
+}
+```
+
+# radius for round corner
+```
+{
+    ""radius"": ""max""
+}
+``` ",effects_and_enhancement
+Color Replace,color_replace,custom_parameters,"* `toColor`: required
+* `tolerance`: `0–100` (default `35`)
+* `fromColor`: optional (auto-detected if omitted)","* Works best on saturated colors
+* High tolerance may affect unintended regions",radius,"effects_and_enhancements, image_overlay, text_overlay",Replaces a source color and its similar shades with a target color while preserving luminosity.,"# color replace by selecting dominant color
+```
+{
+    ""color_replace"": {
+        ""to_color"": ""00FF00"",
+    },
+}
+```
+
+# color replace with custom params
+```
+{
+    ""color_replace"": {
+        ""to_color"": ""00FF00"",
+        ""tolerance"": 40,
+        ""from_color"": ""FF0000"",
+    },
+}
+```",effects_and_enhancement
