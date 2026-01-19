@@ -97,10 +97,11 @@ class AITransformOptions(BaseModel):
             if "prompt" in genfill_dict:
                 prompt = genfill_dict.pop("prompt")
                 if self.encoded:
-                    genfill_params["e-genfill-prompte"] = to_base64(prompt or "")
+                    genfill_params["bg-genfill-prompte"] = to_base64(prompt or "")
                 else:
-                    genfill_params["e-genfill-prompt"] = prompt
-
+                    genfill_params["bg-genfill-prompt"] = prompt
+            else:
+                genfill_params["bg"] = "genfill"
             genfill_params["crop_mode"] = genfill_dict.pop("crop_mode")
             genfill_params["height"] = genfill_dict.pop("height")
             genfill_params["width"] = genfill_dict.pop("width")
@@ -118,10 +119,13 @@ class AITransformOptions(BaseModel):
                 and not self.ai_remove_background
             ):
                 transforms.append({"e-bgremove": True})
-
-            ai_drop_shadow_params = self.ai_drop_shadow.model_dump(exclude_none=True)
-            shadow["el"] = ai_drop_shadow_params["el"]
-            shadow["st"] = ai_drop_shadow_params["st"]
+            if isinstance(self.ai_drop_shadow, AIDropShadow):
+                ai_drop_shadow_params = self.ai_drop_shadow.model_dump(
+                    exclude_none=True
+                )
+                shadow["el"] = ai_drop_shadow_params["el"]
+                shadow["st"] = ai_drop_shadow_params["st"]
+                shadow["az"] = ai_drop_shadow_params["az"]
 
             transforms.append(shadow)
 
@@ -206,7 +210,8 @@ class AITransforms:
             Removes the background using an Removedotbg (external AI service).
 
         ai_remove_background : bool
-            Removes the background using ImageKit’s native AI.
+            Removes the background using ImageKit’s native AI. Cheaper model.
+            Costs 0.1x of ai_background_removal_external.
 
         Image modification
         ~~~~~~~~~~~~~~~~~~
