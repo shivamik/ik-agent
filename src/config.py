@@ -122,7 +122,7 @@ class IK_Transforms(Enum):
 
 
 TIMEOUT_IMAGE_GENERATIO_SECONDS = 120
-ARITHMETIC_EXPRESSION_FILE_PATH = "./static/arithmetic_expressions.yaml"
+ARITHMETIC_EXPRESSION_FILE_PATH = "static/arithmetic_expressions.yaml"
 
 COCO_CLASSES = {
     "person",

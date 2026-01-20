@@ -17,23 +17,27 @@ logger.setLevel(LOG_LEVEL)
 
 
 def maybe_filter(spec: Optional[Any], response: Any) -> Any:
-    try:
-        if spec:
+    if spec:
+        try:
+            try:
+                spec = json.loads(spec)
+            except json.JSONDecodeError:
+                pass
             return glom.glom(response, spec)
-    except glom.core.PathAccessError as e:
-        # logger.error(e)
-        logger.info(
-            (
-                "There was some problem accessing the response fields you requested. ",
-                f"Requested {spec}",
-                f"Got response: {response}",
+        except glom.core.PathAccessError:
+            # logger.error(e)
+            logger.info(
+                (
+                    "There was some problem accessing the response fields you requested. ",
+                    f"Requested {spec}",
+                    f"Got response: {response}",
+                )
             )
-        )
-        return {
-            "status": "success",
-            "message": "We successfully processed your request, but filtering spec was not properly formed. Returning full response.",
-            "response": response,
-        }
+        # return {
+        #     "status": "success",
+        #     "message": "We successfully processed your request, but filtering spec was not properly formed. Returning full response.",
+        #     "response": response,
+        # }
     return response
 
 

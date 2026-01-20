@@ -1,8 +1,12 @@
+import logging
+from strands import tool
 from typing import Any, Dict, Optional, List
 
-from strands import tool
-
 from src.clients import CLIENT
+from src.config import LOG_LEVEL
+
+logger = logging.getLogger("tools.files.update_files")
+logger.setLevel(LOG_LEVEL)
 
 
 METADATA: Dict[str, Any] = {
@@ -21,7 +25,7 @@ async def update_files(
     custom_coordinates: Optional[str] = None,
     custom_metadata: Optional[Dict[str, Any]] = None,
     description: Optional[str] = None,
-    extensions: Optional[Any] = None,
+    extensions: Optional[List[Dict[str, Any]]] = None,
     remove_ai_tags: Optional[Any] = None,
     tags: Optional[List[str]] = None,
     webhook_url: Optional[str] = None,
@@ -44,7 +48,7 @@ async def update_files(
         "publish": publish,
     }
     filtered_body = {k: v for k, v in body.items() if v is not None}
-
+    logger.info(f"Updating file {file_id} with body: {filtered_body}")
     return await CLIENT.files.update(file_id, **filtered_body)
 
 
@@ -60,7 +64,7 @@ async def update_files_tool(
     custom_coordinates: Optional[str] = None,
     custom_metadata: Optional[Dict[str, Any]] = None,
     description: Optional[str] = None,
-    extensions: Optional[Any] = None,
+    extensions: Optional[List[Dict[str, Any]]] = None,
     remove_ai_tags: Optional[Any] = None,
     tags: Optional[List[str]] = None,
     webhook_url: Optional[str] = None,
@@ -87,8 +91,14 @@ async def update_files_tool(
         custom_metadata: Custom metadata key-value pairs to associate with
             the file.
         description: Human-readable description of the file contents.
-        extensions: Optional list of extensions to apply to the file,
+        extensions: Optional list of dict of extensions to apply to the file,
             such as background removal, auto-tagging, or auto-description.
+            ```[{"name": "remove-bg",
+            "options": { "add_shadow": True } }, { "name": "google-auto-tagging",
+            "minConfidence": 80,
+            "maxTags": 10 }, { "name": "aws-auto-tagging",
+            "minConfidence": 80,
+            "maxTags": 10 }, { "name": "ai-auto-description" }]```
         remove_ai_tags: AI tags to remove, or `"all"` to remove all AI tags.
         tags: List of user-defined tags to assign to the file.
         webhook_url: Optional webhook URL to receive async extension updates.

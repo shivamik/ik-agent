@@ -63,7 +63,7 @@ imagekit_arithmetic_expressions:
       allowed_with_parameters: [so, eo, du, lso, ldu, leo]
 
   notes:
-    - Expressions follow: "{value}_{operator}_{value}" and can chain multiple operations.
+    - Expressions follow "{value}_{operator}_{value}" and can chain multiple operations.
     - Values can be expression variables or positive numbers (integers or decimals).
     - Negative numbers are not allowed inside expressions; use "sub" instead.
 

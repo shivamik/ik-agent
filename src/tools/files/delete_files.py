@@ -27,11 +27,6 @@ async def delete_files(
     return await CLIENT.files.delete(file_id)
 
 
-from typing import Any
-
-from strands import tool
-
-
 @tool(
     name="delete_files",
     description=(

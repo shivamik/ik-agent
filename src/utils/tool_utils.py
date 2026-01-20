@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from src.clients import CLIENT
 from src.utils.utils import maybe_filter
+from src.utils.filter_responses import filter_response
 
 
 def _serialize_asset(asset: Any) -> Any:
@@ -24,7 +25,7 @@ async def list_assets(
     skip: Optional[int] = None,
     sort: Optional[str] = None,
     type: Optional[str] = None,
-    filter_spec: Optional[Any] = None,
+    keys_to_filter: Optional[Any] = None,
 ) -> List[Dict[str, Any]]:
     """
     Low-level helper that calls the ImageKit SDK to list/search assets.
@@ -57,4 +58,4 @@ async def list_assets(
     raw_assets = await CLIENT.assets.list(**filtered_body)
     response = [_serialize_asset(asset) for asset in raw_assets]
 
-    return maybe_filter(filter_spec, response)
+    return filter_response(response, key_names=keys_to_filter, tool_name="list_assets")

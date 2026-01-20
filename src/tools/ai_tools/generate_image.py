@@ -95,7 +95,7 @@ async def trigger_imagekit_generation(url: str) -> None:
 
 
 @tool(
-    name="imagekit-generate-image",
+    name="imagekit_generate_image",
     description=(
         "Generate an image using ImageKit's ik-genimg (text-to-image) "
         "transformation. Returns a path-based ImageKit URL."

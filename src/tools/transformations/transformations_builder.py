@@ -105,7 +105,7 @@ def preprocess_url(
 
 
 @tool(
-    name="transformation-builder",
+    name="transformation_builder",
 )
 async def transformation_builder_tool(
     query: str,

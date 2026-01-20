@@ -1,8 +1,13 @@
+import logging
 from strands import tool
 from urllib.parse import urlparse, unquote
 from typing import Any, Dict, List, Optional
 
 from src.utils.tool_utils import list_assets
+from src.config import LOG_LEVEL
+
+logger = logging.getLogger("tools.assets.list_assets")
+logger.setLevel(LOG_LEVEL)
 
 
 def _extract_filename_from_url(file_url: str) -> str:
@@ -42,7 +47,7 @@ async def list_assets_tool(
     skip: Optional[int] = None,
     sort: Optional[str] = None,
     type: Optional[str] = None,
-    filter_spec: Optional[Any] = None,
+    keys_to_filter: List[str] = None,
 ) -> List[Dict[str, Any]]:
     """
     List and search assets in the ImageKit media library.
@@ -104,18 +109,18 @@ async def list_assets_tool(
             Number of results to skip before returning results
             (used for pagination).
 
-        filter_spec:
-            A glom specification used to project or reshape the response.
-            This should be used to reduce payload size and improve performance.
+        keys_to_filter:
+            List of keys to include in the returned asset dictionaries.
+            This helps reduce response size by returning only the
+            fields you need.
 
-            Examples:
-            - "name"
-            - ["name"]
-            - [{"name": "name", "url": "url"}]
 
     Returns:
-        A list of assets (files and  folders), optionally
-        transformed using `filter_spec`.
+        Output Keys: 'keys': {'file_path', 'tags', 'name', 'mime', 'custom_metadata',
+        'height', 'type', 'created_at', 'size', 'url', 'is_private_file', 'version_info',
+        'description', 'file_type', 'is_published', 'width', 'folder_path',
+        'thumbnail', 'updated_at', 'selected_fields_schema', 'custom_coordinates',
+        'folder_id', 'file_id', 'has_alpha', 'ai_tags'}}
     """
     resolved_search_query = search_query
 
@@ -132,6 +137,7 @@ async def list_assets_tool(
         else:
             resolved_search_query = file_url_query
 
+    logger.info(f"keys_to_filter: {keys_to_filter}")
     # ---- Call underlying API ----
     results = await list_assets(
         file_type=file_type,
@@ -141,7 +147,7 @@ async def list_assets_tool(
         skip=skip,
         sort=sort,
         type=type,
-        filter_spec=filter_spec,
+        keys_to_filter=keys_to_filter,
     )
 
     # ---- Post-filter for exact URL match ----
