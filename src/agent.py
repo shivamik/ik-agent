@@ -19,7 +19,7 @@ def configure_logging():
 
     # Control external libraries
     logger = logging.getLogger("strands")
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.ERROR)
     return logger
 
 

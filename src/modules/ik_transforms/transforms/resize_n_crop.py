@@ -75,8 +75,10 @@ from src.modules.ik_transforms.types import (
     BackgroundValue,
     CROP_MODES,
     CROP,
+    AspectRatioValue,
     Background,
     NumberOrExpression,
+    AspectRatio,
 )
 
 logger = logging.getLogger("transforms.resize_and_crop")
@@ -97,7 +99,7 @@ class ResizeAndCrop(BaseModel):
     # -------------------------------------------------
     width: Optional[NumberOrExpression] = None
     height: Optional[NumberOrExpression] = None
-    aspect_ratio: Optional[NumberOrExpression] = None
+    aspect_ratio: Optional[Union[AspectRatioValue, AspectRatio]] = None
     crop: Optional[CROP] = "maintain_ratio"
     crop_mode: Optional[CROP_MODES] = None
 
@@ -229,7 +231,12 @@ class ResizeAndCrop(BaseModel):
             transforms[get_transform_key("h")] = str(dumped["height"])
 
         if "aspect_ratio" in dumped:
-            transforms[get_transform_key("ar")] = dumped["aspect_ratio"]
+            aspect_ratio = (
+                self.aspect_ratio
+                if isinstance(self.aspect_ratio, AspectRatio)
+                else AspectRatio.from_raw(self.aspect_ratio)
+            )
+            transforms[get_transform_key("ar")] = aspect_ratio.to_ik_params()
 
         if "crop" in dumped:
             transforms[get_transform_key("c")] = dumped["crop"]
@@ -298,7 +305,7 @@ class ResizeAndCropTransforms:
         *,
         width: Optional[NumberOrExpression] = None,
         height: Optional[NumberOrExpression] = None,
-        aspect_ratio: Optional[str] = None,
+        aspect_ratio: Optional[Union[AspectRatioValue, AspectRatio]] = None,
         crop: Optional[
             Literal["force", "at_max_enlarge", "at_least", "maintain_ratio"]
         ] = "maintain_ratio",
@@ -328,8 +335,8 @@ class ResizeAndCropTransforms:
             Output height. Same acceptance as width.
 
         aspect_ratio : str, optional
-            Aspect ratio as "<w>-<h>" (e.g. "16-9") or an arithmetic expression string.
-            `iar_div_2` or `car_mul_0.75`
+            Aspect ratio as "<w>_<h>" (e.g. "16_9") or an arithmetic expression string.
+            `iar_div_2` or `car_mul_0.75`. For eg aspect ratio of 16:9 is represented as "16_9".
 
         crop : {"force","at_max_enlarge","at_least","maintain_ratio"}, optional
             Default: "maintain_ratio"

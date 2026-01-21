@@ -10,12 +10,14 @@ from src.config import LOG_LEVEL
 from src.modules.ik_transforms.types import (
     ImageLayerMode,
     BackgroundValue,
+    AspectRatioValue,
     NumberOrExpression,
     DisplacementMode,
     MultiplyMode,
     CutoutMode,
     CutterMode,
     Background,
+    AspectRatio,
 )
 from src.modules.ik_transforms.transforms.effects_and_enhancement import Effects
 
@@ -65,7 +67,7 @@ class ImageOverlay(BaseModel):
     # -------------------------------------------------
     width: Optional[NumberOrExpression] = None
     height: Optional[NumberOrExpression] = None
-    aspect_ratio: Optional[NumberOrExpression] = None
+    aspect_ratio: Optional[Union[AspectRatioValue, AspectRatio]] = None
 
     crop: Optional[Literal["force", "at_max", "at_least"]] = None
     crop_mode: Optional[Literal["extract", "pad_resize"]] = None
@@ -222,7 +224,13 @@ class ImageOverlay(BaseModel):
 
         # aspect_ratio
         if "aspect_ratio" in dumped:
-            transform["aspect_ratio"] = dumped["aspect_ratio"]
+            aspect_ratio = (
+                self.aspect_ratio
+                if isinstance(self.aspect_ratio, AspectRatio)
+                else AspectRatio.from_raw(self.aspect_ratio)
+            )
+            transform["ar"] = aspect_ratio.to_ik_params()
+
         # crop
         if "crop" in dumped:
             transform["crop"] = dumped["crop"]
@@ -339,7 +347,7 @@ class ImageOverlayTransforms:
         encoded: bool = False,
         width: Optional[NumberOrExpression] = None,
         height: Optional[NumberOrExpression] = None,
-        aspect_ratio: Optional[NumberOrExpression] = None,
+        aspect_ratio: Optional[Union[AspectRatioValue, AspectRatio]] = None,
         crop: Optional[Literal["force", "at_max", "at_least"]] = None,
         crop_mode: Optional[Literal["extract", "pad_resize"]] = None,
         focus: Optional[

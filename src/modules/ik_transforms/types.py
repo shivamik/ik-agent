@@ -344,6 +344,7 @@ class NumberOrExpression:
         union = core_schema.union_schema(
             [
                 core_schema.int_schema(),
+                core_schema.float_schema(),
                 core_schema.str_schema(),
             ]
         )
@@ -367,8 +368,11 @@ class NumberOrExpression:
         )
 
     @staticmethod
-    def validate(value: Union[int, str]) -> Union[int, str]:
+    def validate(value: Union[int, float, str]) -> Union[int, str]:
         if isinstance(value, (int)):
+            return value
+
+        if isinstance(value, float):
             return value
 
         if isinstance(value, str):
@@ -379,8 +383,8 @@ class NumberOrExpression:
         raise TypeError("Invalid type for NumberOrExpression")
 
     @staticmethod
-    def serialize(value: Union[int, str]) -> str:
-        if isinstance(value, (int)):
+    def serialize(value: Union[int, float, str]) -> str:
+        if isinstance(value, (int)) or isinstance(value, float):
             if value < 0:
                 return f"N{abs(value)}"
             return str(value)
@@ -698,3 +702,47 @@ class Background(BaseModel):
                 )
             return value
         raise ValueError("Invalid background value")
+
+
+# Regex for fixed ratios like "16_9"
+_FIXED_RATIO_REGEX = re.compile(r"^[0-9]+[_:-][0-9]+$")
+
+
+AspectRatioValue = str
+
+
+class AspectRatio(BaseModel):
+    """
+    Aspect ratio transformation model.
+
+    Supported formats:
+    - Fixed ratio: "<w>_<h>" (e.g. "16_9", "16:9", "16-9")
+    - Arithmetic expression: "iar_div_2", "car_mul_0.75"
+    """
+
+    aspect_ratio: AspectRatioValue
+
+    @classmethod
+    def from_raw(cls, value: AspectRatioValue) -> "AspectRatio":
+        return cls(aspect_ratio=value)
+
+    def to_ik_params(self) -> Optional[str]:
+        dumped = self.model_dump(exclude_none=True)
+        if "aspect_ratio" not in dumped:
+            raise ValueError("Invalid aspect ratio value")
+
+        value = dumped["aspect_ratio"]
+
+        # Fixed aspect ratio like 16_9
+        if _FIXED_RATIO_REGEX.match(value):
+            w, h = re.split(r"[_:-]", value)
+            return f"{w}_{h}"
+
+        # arithmetic expression
+        if EXPR_REGEX.fullmatch(value):
+            return value
+
+        raise ValueError(
+            "Aspect ratio must be '<w>_<h>' (e.g. '16_9') "
+            "or an arithmetic expression like 'iar_div_2'"
+        )

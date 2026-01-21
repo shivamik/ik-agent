@@ -43,14 +43,20 @@ from src.prompts import (
     TRANSFORMATION_BUILDER_PARAMS_BUILDER_PROMPT_TEMPLATE,
     TRANSFORMATION_BUILDER_IK_DOC_PARAM_EXTRACTION_PROMPT,
 )
+from src.config import ARITHMETIC_EXPRESSION_FILE_PATH
 from .transforms.resize_n_crop import ResizeAndCropTransforms
 from .transforms.ai_transforms import AITransforms
 from .transforms.image_overlay import ImageOverlayTransforms
 from .transforms.text_overlay import TextOverlayTransforms
 from .transforms.effects_and_enhancement import EffectsAndEnhancementTransforms
 
+
+arithmetic_expressions_data = yaml.safe_load(open(ARITHMETIC_EXPRESSION_FILE_PATH, "r"))
+arithmetic_expressions_data = encode(arithmetic_expressions_data)
+
 with open(IK_TRANSFORMS_METHOD_CAPABILITIES_PATH, "r") as f:
     method_n_capabilities = yaml.safe_load(f)
+
 
 # Shared aliases to improve readability
 TransformPlan = List[Dict[str, Any]]
@@ -63,8 +69,8 @@ logger = logging.getLogger("transform_builder")
 VALID_METHODS: List[str] = list(method_n_capabilities.keys())
 
 VALID_METHODS_DOCS_STRINGS = {
-    "resize_n_crop": ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
-    "ai_transforms": AITransforms._ai_transform_impl.__doc__,
+    "resize_and_crop": ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
+    "ai_transform": AITransforms._ai_transform_impl.__doc__,
     "image_overlay": ImageOverlayTransforms._image_overlay_impl.__doc__,
     "text_overlay": TextOverlayTransforms._text_overlay_impl.__doc__,
     "effects_and_enhancement": EffectsAndEnhancementTransforms._effects_and_enhancement_impl.__doc__,
@@ -81,6 +87,7 @@ def load_transform_metadata(csv_path: str) -> pd.DataFrame:
     return df
 
 
+DF = load_transform_metadata(IK_TRANSFORMS_CSV_PATH)
 # ---------------------------------------------------------------------
 # Small LLM – intent classifier
 # ---------------------------------------------------------------------
@@ -152,6 +159,10 @@ async def big_llm_generate(
         user_query=user_query,
         metadata=encode(filtered_metadata),
     )
+    prompt += f"""
+   Arithmetic expressions that can be used in parameters:
+   {arithmetic_expressions_data}
+    """
 
     response = await OPENAI_CLIENT.chat.completions.create(
         model="gpt-4.1",
@@ -333,7 +344,6 @@ def parse_params(
 
 def build_final_transformations(
     structured_plan: TransformPlan,
-    doc_params: Optional[Dict[str, Any]] = None,
 ) -> TransformPlan:
     """
     Build the final ImageKit transformation list from structured (CSV-based)
@@ -379,10 +389,9 @@ def build_final_transformations(
     # CASE 1: Structured plan exists (primary path)
     # ------------------------------------------------------------------
     if structured_plan:
-        logger.info(
-            "Applying structured plan with %d step(s) and doc_params=%s",
+        logger.debug(
+            "Applying structured plan with %d step(s)",
             len(structured_plan),
-            bool(doc_params),
         )
 
         for step in structured_plan:
@@ -399,31 +408,8 @@ def build_final_transformations(
                     final_transforms.append(p)
             else:
                 final_transforms.append(params)
-        # Apply doc params ONLY if not already set
-        if doc_params and doc_params.get("params"):
-            logger.debug("There are doc params of len: ", len(doc_params["params"]))
-            fallback_transform: Dict[str, Any] = {}
-            for long_key, value in doc_params["params"].items():
-                if value:
-                    fallback_transform[get_transform_key(long_key)] = value
-            if fallback_transform:
-                # Overlay doc params as a new step
-                final_transforms.append(fallback_transform)
 
-    # ------------------------------------------------------------------
-    # CASE 2: No structured plan → docs-only fallback
-    # ------------------------------------------------------------------
-    if doc_params and doc_params.get("params"):
-        fallback_transform: Dict[str, Any] = {}
-
-        for long_key, value in doc_params["params"].items():
-            if value:
-                fallback_transform[get_transform_key(long_key)] = value
-
-        if fallback_transform:
-            final_transforms.append(fallback_transform)
-
-    logger.info("Built %d transformation(s)", len(final_transforms))
+    logger.debug("Built %d transformation(s)", len(final_transforms))
     return final_transforms
 
 
@@ -445,24 +431,21 @@ async def resolve_imagekit_transform(
     4) If missing/uncertain, search docs and extract advisory params.
     5) Merge structured and advisory params, preferring structured values.
     """
-    logger.info("Resolving transform for query: %s", user_query)
-    df = load_transform_metadata(IK_TRANSFORMS_CSV_PATH)
+    logger.debug("Resolving transform for query: %s", user_query)
 
     classification = await small_llm_filter(
         user_query=user_query,
         valid_methods=method_n_capabilities,
     )
-    logger.info("Classification result: %s", classification)
+    logger.debug("Classification result: %s", classification)
 
     classified_methods = classification.get("methods", [])
-    # unresolved_intent = classification.get("unresolved_intent")
-    unresolved_intent = None
 
     filtered_metadata = filter_metadata(
-        df=df,
+        df=DF,
         methods=classified_methods,
     )
-    logger.info(
+    logger.debug(
         "Filtered %d metadata entries using methods=%s",
         len(filtered_metadata),
         classified_methods,
@@ -486,32 +469,11 @@ async def resolve_imagekit_transform(
             user_query=user_query,
             filtered_metadata=output_metadata,
         )
-        logger.info("Structured plan steps: %d", len(structured_plan))
-        logger.info(
+        logger.debug(
             f"Structured plan steps: {structured_plan}",
         )
-    doc_params: Dict[str, Any] = {}
-    should_query_docs = not structured_plan or bool(unresolved_intent)
-
-    if should_query_docs:
-        logger.info(
-            "Falling back to docs search (unresolved=%s, structured=%s)",
-            bool(unresolved_intent),
-            bool(structured_plan),
-        )
-        search_query = unresolved_intent or user_query
-        raw_results = await search_docs(query=search_query)
-        grouped = group_search_results(raw_results)
-        doc_params = await extract_params_from_docs(
-            user_query=search_query,
-            search_docs_result=grouped,
-        )
-        logger.info("Extracted %d doc param(s)", len(doc_params.get("params", {})))
-
-    logger.info(f"{structured_plan}, {doc_params}")
 
     transformations = build_final_transformations(
         structured_plan=structured_plan,
-        doc_params=doc_params,
     )
     return transformations

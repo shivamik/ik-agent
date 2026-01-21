@@ -1,10 +1,3 @@
-import yaml
-from toon_format import encode
-from src.config import ARITHMETIC_EXPRESSION_FILE_PATH
-
-arithmetic_expressions_data = yaml.safe_load(open(ARITHMETIC_EXPRESSION_FILE_PATH, "r"))
-arithmetic_expressions_data = encode(arithmetic_expressions_data)
-
 AGENT_SYSTEM_PROMPT = """
   You are an ImageKit.io agent. You can help users to carry out actions and tasks.
   You can tools available..
@@ -109,7 +102,8 @@ User query:
 """.strip()
 
 # ? prompt for building transformation parameter to be built
-TRANSFORMATION_BUILDER_PARAMS_BUILDER_PROMPT_TEMPLATE = """
+TRANSFORMATION_BUILDER_PARAMS_BUILDER_PROMPT_TEMPLATE = (
+    """
 You are an ImageKit transformation generator.
 
 You are given:
@@ -138,11 +132,11 @@ User query:
 
 Allowed parameters:
 {metadata}
-
-
-Arithmetic expressions reference guide:
-{arithmetic_expressions_data}
 """.strip()
+    + "\n\n"
+    + f"""
+"""
+)
 
 # ? prompt for searching the docs for params
 TRANSFORMATION_BUILDER_IK_DOC_PARAM_EXTRACTION_PROMPT = """

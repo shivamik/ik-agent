@@ -348,31 +348,6 @@ class EffectsAndEnhancementTransforms:
         """
         Build and validate **effects & enhancement transformations** for ImageKit.
 
-        Schema:
-            image_path?:str
-            encoded?:bool
-            width?,height?,aspect_ratio?:num|expr
-            crop?:"force"|"at_max"|"at_least"
-            crop_mode?:"extract"|"pad_resize"
-            focus?:
-                "face"|"center"|"top"|"bottom"|
-                "left"|"right"|
-                "top_left"|"top_right"|
-                "bottom_left"|"bottom_right"
-            zoom?:float
-            x?,y?,xc?,yc?:num|expr
-            layer_x?,layer_y?:num|expr
-            layer_focus?:
-                "center"|"top"|"bottom"|"left"|"right"|
-                "top_left"|"top_right"|
-                "bottom_left"|"bottom_right"
-            background?:BackgroundValue|Background
-            quality?:int
-            dpr?:float|str
-            layer_mode?:"displace"|"multiply"|"cutout"|"cutter"
-            child?:ImageOverlay
-            effects?:Effects
-
         This method accepts a validated subset of ImageKit-supported visual effects,
         normalizes them, and emits a **list of transformation dictionaries** that can
         be serialized into an ImageKit URL.
@@ -389,6 +364,25 @@ class EffectsAndEnhancementTransforms:
         - Blur, trim, border, and geometry transforms
         - Shadows, gradients, and distortion effects
         - Orientation and masking utilities
+
+        Schema:
+            'contrast': FieldInfo(annotation=Union[bool, NoneType], required=False, default=None),
+            'sharpen': FieldInfo(annotation=Union[bool, int, NoneType], required=False, default=None, metadata=[Ge(ge=0)]),
+            'grayscale': FieldInfo(annotation=Union[bool, NoneType], required=False, default=None),
+            'unsharp_mask': FieldInfo(annotation=Union[UnsharpMaskEffect, NoneType], required=False, default=None),
+            'shadow': FieldInfo(annotation=Union[bool, ShadowEffect, NoneType], required=False, default=None),
+            'gradient': FieldInfo(annotation=Union[bool, GradientEffect, NoneType], required=False, default=None),
+            'perspective_distort': FieldInfo(annotation=Union[PerspectiveDistortEffect, NoneType], required=False, default=None),
+            'arc_distort': FieldInfo(annotation=Union[ArcDistortEffect, NoneType], required=False, default=None),
+            'color_replace': FieldInfo(annotation=Union[ColorReplaceEffect, NoneType], required=False, default=None),
+            'border': FieldInfo(annotation=Union[BorderEffect, NoneType], required=False, default=None),
+            'blur': FieldInfo(annotation=Union[int, NoneType], required=False, default=None, metadata=[Ge(ge=1), Le(le=100)]),
+            'trim': FieldInfo(annotation=Union[Literal[True], int, NoneType], required=False, default=None),
+            'rotate': FieldInfo(annotation=Union[NumberOrExpression, Literal['auto'], NoneType], required=False, default=None),
+            'flip': FieldInfo(annotation=Union[Literal['h', 'v', 'h_v'], NoneType], required=False, default=None),
+            'radius': FieldInfo(annotation=Union[NumberOrExpression, Literal['max'], NoneType], required=False, default=None),
+            'background': FieldInfo(annotation=Union[Literal['dominant'], Color, BlurredBackground, GradientBackground, Background, NoneType], required=False, default=None),
+            'opacity': FieldInfo(annotation=Union[int, NoneType], required=False, default=None, metadata=[Ge(ge=0), Le(le=100)])
 
         Parameters
         ----------
