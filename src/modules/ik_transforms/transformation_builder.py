@@ -69,11 +69,11 @@ logger = logging.getLogger("transform_builder")
 VALID_METHODS: List[str] = list(method_n_capabilities.keys())
 
 VALID_METHODS_DOCS_STRINGS = {
-    "resize_and_crop": ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
-    "ai_transform": AITransforms._ai_transform_impl.__doc__,
-    "image_overlay": ImageOverlayTransforms._image_overlay_impl.__doc__,
-    "text_overlay": TextOverlayTransforms._text_overlay_impl.__doc__,
-    "effects_and_enhancement": EffectsAndEnhancementTransforms._effects_and_enhancement_impl.__doc__,
+    IK_Transforms.RESIZE_AND_CROP.value: ResizeAndCropTransforms._resize_and_crop_impl.__doc__,
+    IK_Transforms.AI_TRANSFORM.value: AITransforms._ai_transform_impl.__doc__,
+    IK_Transforms.IMAGE_OVERLAY.value: ImageOverlayTransforms._image_overlay_impl.__doc__,
+    IK_Transforms.TEXT_OVERLAY.value: TextOverlayTransforms._text_overlay_impl.__doc__,
+    IK_Transforms.EFFECTS_AND_ENHANCEMENT.value: EffectsAndEnhancementTransforms._effects_and_enhancement_impl.__doc__,
 }
 
 # ---------------------------------------------------------------------
@@ -324,7 +324,7 @@ def group_search_results(search_results: Dict[str, Any]) -> Dict[str, Dict[str, 
     return final_docs
 
 
-def parse_params(
+async def parse_params(
     method: str,
     params: Dict[str, Any],
 ):
@@ -336,13 +336,13 @@ def parse_params(
     elif method == IK_Transforms.IMAGE_OVERLAY.value:
         return ImageOverlayTransforms().image_overlay(**params)
     elif method == IK_Transforms.TEXT_OVERLAY.value:
-        return TextOverlayTransforms().text_overlay(**params)
+        return await TextOverlayTransforms().text_overlay(**params)
     elif method == IK_Transforms.EFFECTS_AND_ENHANCEMENT.value:
         return EffectsAndEnhancementTransforms().effects_and_enhancement(**params)
     return params
 
 
-def build_final_transformations(
+async def build_final_transformations(
     structured_plan: TransformPlan,
 ) -> TransformPlan:
     """
@@ -396,7 +396,7 @@ def build_final_transformations(
 
         for step in structured_plan:
             method = step.get("method", "")
-            params = parse_params(method, step.get("params", {}))
+            params = await parse_params(method, step.get("params", {}))
             # params = step.get("params", {})
 
             if not params:
@@ -469,11 +469,11 @@ async def resolve_imagekit_transform(
             user_query=user_query,
             filtered_metadata=output_metadata,
         )
-        logger.debug(
+        logger.info(
             f"Structured plan steps: {structured_plan}",
         )
 
-    transformations = build_final_transformations(
+    transformations = await build_final_transformations(
         structured_plan=structured_plan,
     )
     return transformations

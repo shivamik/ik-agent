@@ -8,6 +8,7 @@ from strands.models.openai import OpenAIModel
 
 from src.tools import tools  # Import the tools list from src.tools
 from src.prompts import AGENT_SYSTEM_PROMPT
+from src.config import AGENT_LOG_LEVEL
 
 
 def configure_logging():
@@ -19,7 +20,7 @@ def configure_logging():
 
     # Control external libraries
     logger = logging.getLogger("strands")
-    logger.setLevel(logging.ERROR)
+    logger.setLevel(AGENT_LOG_LEVEL)
     return logger
 
 

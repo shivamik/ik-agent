@@ -1,199 +1,145 @@
-imagekit_arithmetic_expressions:
+expressions_guide:
+  purpose: >
+    Arithmetic expressions allow dynamic calculation of dimensions, positions,
+    borders, font sizes, padding, and video trim values in ImageKit transformations
+    without hardcoding numeric values. base asset can be base layer or base image
 
-  description: >
-    Mapping from natural-language intent to ImageKit arithmetic expressions.
-    Use these rules to generate relative sizing, positioning, and timing
-    instead of hard-coded numbers.
+  expression_syntax:
+    pattern: "<value>_<operator>_<value>[_<operator>_<value>]*"
+    notes:
+      - Values are evaluated left-to-right using operator precedence.
+      - Expressions may consist of variables, positive integers, or positive decimals.
+      - A single variable can be used without any operator.
 
-  supported_operators:
-    add:
-      operation: addition
-      token: add
-    sub:
-      operation: subtraction
-      token: sub
-    mul:
-      operation: multiplication
-      token: mul
-    div:
-      operation: division
-      token: div
-    mod:
-      operation: modulus (remainder)
-      token: mod
-    pow:
-      operation: exponentiation (power)
-      token: pow
+  values:
+    variables:
+      global:
+        iw: "Initial width of the asset"
+        ih: "Initial height of the asset"
+        iar: "Initial aspect ratio of the asset"
+        idu: "Initial duration of the asset (video only)"
+        cw: "Current width after the last transformation"
+        ch: "Current height after the last transformation"
+        car: "Current aspect ratio after the last transformation"
 
-  supported_expression_variables:
-    ih:
-      description: initial height of the asset (original height). In a layer, initial height of the overlaid asset.
-      scope: global_and_layer
-    iw:
-      description: initial width of the asset (original width). In a layer, initial width of the overlaid asset.
-      scope: global_and_layer
-    iar:
-      description: initial aspect ratio of the asset. In a layer, initial aspect ratio of the overlaid asset.
-      scope: global_and_layer
-    idu:
-      description: original duration of the asset. In a layer, duration of the overlaid asset. Only valid with durational parameters.
-      scope: duration_only
-      allowed_with_parameters: [so, eo, du, lso, ldu, leo]
-    ch:
-      description: current height after the last transformation in the chain. In a layer, current height of the overlaid asset.
-      scope: global_and_layer
-    cw:
-      description: current width after the last transformation in the chain. In a layer, current width of the overlaid asset.
-      scope: global_and_layer
-    car:
-      description: current aspect ratio after the last transformation in the chain. In a layer, current aspect ratio of the overlaid asset.
-      scope: global_and_layer
-    bh:
-      description: current height of the base asset on which a layer is overlaid.
-      scope: layer_only
-    bw:
-      description: current width of the base asset on which a layer is overlaid.
-      scope: layer_only
-    bar:
-      description: current aspect ratio of the base asset on which a layer is overlaid.
-      scope: layer_only
-    bdu:
-      description: current duration of the base asset on which a layer is overlaid. Only valid inside layer transformations and with durational parameters.
-      scope: layer_duration_only
-      allowed_with_parameters: [so, eo, du, lso, ldu, leo]
+      layer_only:
+        bw: "Base asset width (layer transformations only), base image width"
+        bh: "Base asset height (layer transformations only), base image height"
+        bar: "Base asset aspect ratio (layer transformations only)"
+        bdu: "Base asset duration (layer transformations only, video)"
 
-  notes:
-    - Expressions follow "{value}_{operator}_{value}" and can chain multiple operations.
-    - Values can be expression variables or positive numbers (integers or decimals).
-    - Negative numbers are not allowed inside expressions; use "sub" instead.
+    constants:
+      allowed:
+        - positive_integer
+        - positive_decimal
+      disallowed:
+        - negative_numbers
+        - variables_not_listed
 
-  quantity_phrases:
-    half:
-      operator: mul
-      value: 0.5
-    one_half:
-      operator: mul
-      value: 0.5
-    quarter:
-      operator: div
-      value: 4
-    one_fourth:
-      operator: div
-      value: 4
-    third:
-      operator: div
-      value: 3
-    double:
-      operator: mul
-      value: 2
-    triple:
-      operator: mul
-      value: 3
-    ten_percent:
-      operator: mul
-      value: 0.1
-    twenty_percent:
-      operator: mul
-      value: 0.2
-    fifty_percent:
-      operator: mul
-      value: 0.5
-    seventy_five_percent:
-      operator: mul
-      value: 0.75
+  operators:
+    add: "Addition"
+    sub: "Subtraction"
+    mul: "Multiplication"
+    div: "Division"
+    mod: "Modulus (remainder)"
+    pow: "Power"
 
-  arithmetic_intents:
-    add:
-      phrases: ["add", "plus", "increase by", "bigger by"]
-      operator: add
-    subtract:
-      phrases: ["subtract", "minus", "decrease by", "smaller by"]
-      operator: sub
+  operator_precedence:
+    order:
+      - [mul, div]
+      - [add, sub]
+      - [mod]
+      - [pow]
+    evaluation: "Left to right within the same precedence level"
 
-  canonical_templates:
+  supported_parameters:
+    dimensions:
+      w: "Width"
+      h: "Height"
+      ar: "Aspect ratio (expression result is width/height)"
 
-    resize:
-      height_half_of_image:
-        description: height equals half of original image height
-        expression: ih_mul_0.5
-      width_three_quarters_of_image:
-        description: width equals 75 percent of original image width
-        expression: iw_mul_0.75
-      height_image_plus_10:
-        description: height equals image height plus 10 pixels
-        expression: ih_add_10
-      width_current_minus_20:
-        description: width equals current width minus 20 pixels
-        expression: cw_sub_20
+    position:
+      x: "Horizontal offset"
+      y: "Vertical offset"
+      xc: "Horizontal center offset"
+      yc: "Vertical center offset"
 
-    positioning_xy:
-      align_right_edge:
-        description: position at the right edge (x)
-        x_expression: iw_sub_cw
-      align_bottom_edge:
-        description: position at the bottom edge (y)
-        y_expression: ih_sub_ch
-      ten_percent_from_left:
-        description: position 10 percent from left edge (x)
-        x_expression: iw_mul_0.1
-      twenty_percent_from_top:
-        description: position 20 percent from top edge (y)
-        y_expression: ih_mul_0.2
-
-    layer_positioning_lx_ly:
-      center_horizontally:
-        description: center layer horizontally on base asset
-        lx_expression: bw_div_2_sub_cw_div_2
-      center_vertically:
-        description: center layer vertically on base asset
-        ly_expression: bh_div_2_sub_ch_div_2
-      ten_percent_from_left_of_base:
-        description: place layer 10 percent from left of base asset
-        lx_expression: bw_mul_0.1
-      twenty_five_percent_from_top_of_base:
-        description: place layer 25 percent from top of base asset
-        ly_expression: bh_mul_0.25
+    layer_position:
+      lx: "Layer horizontal position (executed last in layer chain)"
+      ly: "Layer vertical position (executed last in layer chain)"
 
     border:
-      five_percent_of_width:
-        description: border width equals 5 percent of current width
-        expression: cw_mul_0.05_<color>
-      fixed_ten_pixels:
-        description: border width equals 10 pixels
-        expression: 10_<color>
+      syntax: "b-<expression>_<color>"
+      description: "Calculated expression defines border width"
 
-    padding_text:
-      two_percent_of_base_width:
-        description: padding equals 2 percent of base width (inside text layer)
-        expression: bw_mul_0.02
-      five_percent_of_base_height:
-        description: padding equals 5 percent of base height (inside text layer)
-        expression: bh_mul_0.05
+    text:
+      fs: "Font size"
+      pa: "Uniform padding on all sides"
 
-    font_size:
-      ten_percent_of_base_height:
-        description: font size equals 10 percent of base height
-        expression: bh_mul_0.1
-      relative_to_base_width:
-        description: font size relative to base width
-        expression: bw_div_50
+    gradient:
+      sp: "Gradient stop position"
 
-    compound:
-      mix_current_and_base_width:
-        description: width equals 80 percent of current width plus 40 percent of base width
-        expression: cw_mul_0.8_add_bw_mul_0.4
-      center_overlay_relative:
-        description: combine overlay and image dimensions
-        expression: cw_div_2_add_iw_div_2
-      weighted_height_mix:
-        description: height equals 80 percent of image height plus 20 percent of base height
-        expression: ih_mul_0.8_add_bh_mul_0.2
+    video_trim:
+      base:
+        - so
+        - du
+        - eo
+      layer:
+        - lso
+        - ldu
+        - leo
 
-  generation_rules:
-    - Prefer arithmetic expressions over fixed numbers when user intent is relative
-    - Use ih/iw for original asset dimensions
-    - Use ch/cw for dimensions after previous transforms in the same chain
-    - Inside layers, prefer bw/bh for sizing and positioning relative to the base asset
-    - For durational parameters (so, eo, du, lso, ldu, leo), only use idu and bdu variables
-    - Do not use negative numbers; express subtraction using the "sub" operator
-    - Expressions must follow "value_operator_value" chaining with supported operators only
+  context_constraints:
+    layer_execution:
+      - lx and ly are always executed last within a layer transformation.
+      - ch, cw, and car in lx/ly expressions always represent final layer dimensions.
+
+    text_and_block_layers:
+      allowed_variables:
+        - bw
+        - bh
+        - bar
+
+    video_trim_expressions:
+      allowed_variables:
+        - idu
+        - bdu
+      rules:
+        - Trim parameters using expressions may appear only once per chain.
+        - Mixing multiple trim expressions across chains is invalid.
+
+  generation_rules_for_llm:
+    must:
+      - Use only listed variables.
+      - Use only listed operators.
+      - Use underscore-separated operator syntax.
+      - Respect layer vs non-layer variable restrictions.
+      - Place layer expressions in a separate chain.
+
+    must_not:
+      - Use negative numeric literals.
+      - Invent variables or operators.
+      - Combine unsupported variables with restricted parameters.
+      - Reuse trim parameters with expressions in multiple chains.
+
+  examples:
+    resizing:
+      - "w-iw_div_2"
+      - "h-ih_mul_0.8_add_bw_mul_0.2"
+
+    positioning:
+      relative_to_base:
+        - "lx-bw_div_8"
+        - "ly-bh_mul_0.1"
+
+    border:
+      - "b-cw_mul_0.05_yellow"
+
+    text:
+      - "fs-bh_div_20"
+      - "pa-bw_mul_0.01"
+
+    video:
+      trim:
+        - "eo-idu_sub_10"
+        - "lso-bdu_div_2"

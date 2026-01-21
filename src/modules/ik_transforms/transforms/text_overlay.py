@@ -206,7 +206,7 @@ class TextOverlayTransforms:
         if extra:
             logger.debug("Ignoring unsupported overlay params: %s", extra)
 
-        return self._text_overlay_impl(**known)
+        return await self._text_overlay_impl(**known)
 
     async def _text_overlay_impl(
         self,

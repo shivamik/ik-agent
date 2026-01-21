@@ -8,13 +8,16 @@ from pathlib import Path
 from enum import Enum
 
 # LOG_LEVEL = os.getenv("log_level", "INFO").upper()
-LOG_LEVEL = "DEBUG"
+# LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "ERROR"
 if LOG_LEVEL == "INFO":
     LOG_LEVEL = logging.INFO
 elif LOG_LEVEL == "DEBUG":
     LOG_LEVEL = logging.DEBUG
 else:
     LOG_LEVEL = logging.INFO
+
+AGENT_LOG_LEVEL = logging.ERROR
 
 logger = logging.getLogger("src.config")
 

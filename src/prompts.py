@@ -50,7 +50,11 @@ AGENT_SYSTEM_PROMPT = """
     ]
     ```
     - Use these keys to filter out the response from file upload or any file related task. some keys in a dict of file response are
-        `['ai_tags', 'audio_codec', 'bit_rate', 'custom_coordinates', 'custom_metadata', 'description', 'duration', 'embedded_metadata', 'extension_status', 'file_id', 'file_path', 'file_type', 'height', 'is_private_file', 'is_published', 'metadata', 'name', 'selected_fields_schema', 'size', 'tags', 'thumbnail_url', 'url', 'version_info', 'video_codec', 'width', 'fileId', 'versionInfo', 'filePath', 'fileType', 'thumbnailUrl', 'AITags']`
+        `['ai_tags', 'audio_codec', 'bit_rate', 'custom_coordinates', 'custom_metadata', 'description', 'duration', 
+        'embedded_metadata', 'extension_status', 'file_id', 'file_path', 'file_type', 'height', 'is_private_file', 
+        'is_published', 'metadata', 'name', 'selected_fields_schema', 'size', 'tags', 'thumbnail_url', 
+        'url', 'version_info', 'video_codec', 'width', 'fileId', 'versionInfo', 'filePath', 'fileType', 'thumbnailUrl', 'AITags']`
+    - When user asks for cheap background removal, use ai_remove_background method by default. 
 """
 
 
@@ -116,6 +120,19 @@ Rules:
 - Do NOT invent parameters or methods
 - Do NOT include unused fields
 - Output valid JSON ONLY
+- When uses ask to make transformation step by step, interpret it as chain transformation.
+- For chain transformation, each step will have its own method and params.
+For eg: 
+Query: 
+  Do this step by step:
+    - Resize the image to 800x600
+    - Crop the image to focus on face
+Output In YAML Ffo:
+ `[
+    {{ "method_name": "resize_and_crop", "params": {{ "height": 600, "width": 800 }} }}, 
+    {{ "method_name": "resize_and_crop", "params": {{ "focus": "face" }} }}, 
+  ]`
+
 
 Schema:
 [
@@ -162,6 +179,7 @@ Rules:
 - Only include parameters relevant to the user query.
 - Add relavant values for the parameters
 - If you cannot add specific values, ignore that parameter.
+
 
 Output JSON ONLY:
 {{ "params": {{ "<param>": "<value>" }} }}

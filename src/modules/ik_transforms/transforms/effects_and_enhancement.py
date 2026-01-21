@@ -21,6 +21,7 @@ from ..types import (
     FlipMode,
     Background,
     BackgroundValue,
+    Radius,
 )
 
 from src.config import LOG_LEVEL
@@ -127,7 +128,7 @@ class Effects(BaseModel):
     trim: Optional[Union[Literal[True], int]] = None
     rotate: Optional[Union[NumberOrExpression, Literal["auto"]]] = None
     flip: Optional[FlipMode] = None
-    radius: Optional[Union[NumberOrExpression, Literal["max"]]] = None
+    radius: Optional[Union[Number, Literal["max"], Radius]] = None
     background: Optional[Union[BackgroundValue, Background]] = None
     opacity: Optional[int] = Field(None, ge=0, le=100)
 
@@ -174,7 +175,14 @@ class Effects(BaseModel):
             transforms.append({"e": "grayscale"})
 
         if "unsharp_mask" in dumped:
-            transforms.append(dumped["unsharp_mask"])
+            usm_params = dumped["unsharp_mask"]
+            unsharp_mask = {
+                "e-usm": f"{usm_params['radius']}_"
+                f"{usm_params['sigma']}_"
+                f"{usm_params['amount']}_"
+                f"{usm_params['threshold']}"
+            }
+            transforms.append(unsharp_mask)
 
         if "shadow" in dumped:
             if dumped["shadow"] is True:
@@ -341,7 +349,7 @@ class EffectsAndEnhancementTransforms:
         trim: Optional[Union[Literal[True], int]] = None,
         rotate: Optional[Union[NumberOrExpression, Literal["auto"]]] = None,
         flip: Optional[FlipMode] = None,
-        radius: Optional[Union[NumberOrExpression, Literal["max"]]] = None,
+        radius: Optional[Union[Number, Literal["max"], Radius]] = None,
         background: Optional[Union[BackgroundValue, Background]] = None,
         opacity: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
@@ -380,7 +388,7 @@ class EffectsAndEnhancementTransforms:
             'trim': FieldInfo(annotation=Union[Literal[True], int, NoneType], required=False, default=None),
             'rotate': FieldInfo(annotation=Union[NumberOrExpression, Literal['auto'], NoneType], required=False, default=None),
             'flip': FieldInfo(annotation=Union[Literal['h', 'v', 'h_v'], NoneType], required=False, default=None),
-            'radius': FieldInfo(annotation=Union[NumberOrExpression, Literal['max'], NoneType], required=False, default=None),
+            'radius': FieldInfo(annotation=Union[Number, Literal['max'], Radius, NoneType], required=False, default=None),
             'background': FieldInfo(annotation=Union[Literal['dominant'], Color, BlurredBackground, GradientBackground, Background, NoneType], required=False, default=None),
             'opacity': FieldInfo(annotation=Union[int, NoneType], required=False, default=None, metadata=[Ge(ge=0), Le(le=100)])
 
@@ -442,7 +450,10 @@ class EffectsAndEnhancementTransforms:
             - Negative offsets are supported
 
         gradient : bool | GradientEffect | dict, optional
-            Applies a linear gradient overlay.
+            Gradient effect for image.
+            Applies a linear gradient overlay. This applies
+            gradient effect to the image. To be used on an image.
+
 
             Parameters:
             - `linear_direction` : angle (0–360) or positional keyword
@@ -465,6 +476,7 @@ class EffectsAndEnhancementTransforms:
 
         arc_distort : ArcDistortEffect | dict, optional
             Applies arc distortion to curve the image.
+            Circular" distortion effect to the image.
 
             Parameters:
             - `degrees`: positive or negative number
@@ -534,13 +546,14 @@ class EffectsAndEnhancementTransforms:
             - `"v"`   → vertical
             - `"h_v"` → both directions
 
-        radius : NumberOrExpression | "max", optional
+        radius : NumberOrExpression | "max", Radius, optional
             Rounds image corners.
 
             Accepted forms:
             - Positive number
-            - Arithmetic expression
             - `"max"` → fully circular mask
+            - Per corner radius like `topcorner_toprightcorner_bottomrightcorner_bottomleftcorner`
+                Eg: `10_20_30_40`
 
             Notes:
             - Applied after resizing

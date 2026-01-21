@@ -166,7 +166,10 @@ async def transformation_builder_tool(
         If the query cannot be resolved into a valid ImageKit transformation
         (e.g. unsupported parameters, conflicting options, or invalid combinations).
     """
-    transformation = await resolve_imagekit_transform(query)
+    try:
+        transformation = await resolve_imagekit_transform(query)
+    except Exception as e:
+        logger.error(e)
     src = src.split("?")[0]
     src = preprocess_url(src, transformation)
     url = await CLIENT.helper.build_url(

@@ -340,22 +340,55 @@ class ResizeAndCropTransforms:
 
         crop : {"force","at_max_enlarge","at_least","maintain_ratio"}, optional
             Default: "maintain_ratio"
+            Forced Crop (c-force): Enforces exact dimensions in the output image, but no cropping to achieve the requested size.
+                Forcefully resizes image. Aspect ratio may not be preserved.
+            Max-size Crop (c-at_max): Preserves the whole image content without cropping if the maximum dimension is less than the
+                requested size, modifying the image’s dimensions to maintain the aspect ratio.
+                Larger dimension is matched to the requested size. other dimension is scaled to maintain aspect ratio.
+            Max-size Enlarge Crop (c-at_max_enlarge): Preserves the whole image content without cropping if the maximum dimension is less than the
+                requested size, modifying the image’s dimensions to maintain the aspect ratio. Same as at_max but allows upscaling.
+                Larger dimension is matched to the requested size. other dimension is scaled to maintain aspect ratio.
+            Min-size Crop (c-at_least): Similar to max-size crop but works to ensure that the output image size
+                does not go below specified dimensions, maintaining the aspect ratio.
+                Smaller dimension is matched to the requested size. other dimension is scaled to maintain aspect ratio.
+            Maintain Ratio Crop (c-maintain_ratio): Ensures the aspect ratio is preserved while cropping, potentially
+                adjusting one of the dimensions.
+
             Resize/crop strategy. Important:
             - When crop='force', focus and zoom are not allowed.
 
         crop_mode : {"pad_resize","pad_extract","extract"}, optional
             Crop mode controlling padding/extraction.
             - Coordinates (x,y,x_center,y_center) are ONLY allowed with crop_mode in {"extract","pad_extract"}.
+            Pad Resize Crop (cm-pad_resize): Preserves the entire image content without cropping while ensuring the
+                dimensions you specified are met, using padding to fill any empty space if necessary.
+            Extract Crop (cm-extract): Crops a smaller area from the larger original image based on specified
+                coordinates. This can also be combined with focus parameters to ensure important areas of the
+                image are prioritized during cropping.
+            Pad Extract Crop (cm-pad_extract): An extension of the extract crop strategy that allows for extracting
+                a larger area than the original image, adding solid color padding around it to meet the requested size.
 
-        background: str or Background, optional
-            Background color/value for padding.
+        background:
+            - For Solid color, requires hex, RGBA hex or svg color name
+            - For dominant color background, use "dominant"
+            - For blurred background use
+                background: {"blur_intensity": Union[int] = "auto", brightness: [-255 to 255]}
+            - For Gradient background use
+                background: {"mode": "dominant", "pallete_size": Literal[2,4]=2}
 
         focus : str, optional
             Focus parameter `fo` with context-sensitive values.
+            For tight crop around objects, use COCO class names (e.g., "person", "dog").
+            `fo-<object_class>`
+            Use fo-left to push object to left side when using crop_mode='pad_resize', allowing padding to right.
+            Use fo-right to push object to right side when using crop_mode='pad_resize', allowing padding to left.
+            Use fo-top to push object to top side when using crop_mode='pad_resize', allowing padding to bottom.
 
         zoom : int | float | str, optional
             Zoom factor `z`. Must be > 0 when numeric.
             Forbidden when crop='force'.
+            Zoom > 1 means zoom in
+            Zoom < 1 means zoom out
 
         x, y : int | float | str, optional
             Absolute offsets (top-left origin) used for extraction crops.

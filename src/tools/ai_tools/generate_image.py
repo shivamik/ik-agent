@@ -104,7 +104,7 @@ async def trigger_imagekit_generation(url: str) -> None:
 async def imagekit_generate_image(
     *,
     prompt: str,
-    image_path: Optional[str] = None,
+    image_path: str,
 ) -> str:
     """
     Generate an image using ImageKit's ik-genimg transformation.
@@ -114,13 +114,12 @@ async def imagekit_generate_image(
     prompt : str
         Text prompt describing the image to generate. Required.
 
-    image_path : str, optional
+    image_path : str
         Output path for the generated image. This does not upload the image
         imagekit dam, its just the path appended to the ik-genimg URL
         for accessing the generated image. For saving the image to the DAM,
         you need to use upload tools separately.
         Example: 'gen-images/burger.jpg'
-        If omitted, only the ik-genimg prompt path is returned.
 
     Returns
     -------
@@ -137,7 +136,7 @@ async def imagekit_generate_image(
     files = await list_assets(
         type="file",
         limit=1,
-        filter_spec=[{"url": "url"}],
+        keys_to_filter=["url"],
     )
 
     if not files or "url" not in files[0]:

@@ -114,11 +114,11 @@ class AITransformOptions(BaseModel):
         if self.ai_drop_shadow:
             shadow: Dict[str, Any] = {"e-dropshadow": True}
 
-            if (
-                not self.ai_background_removal_external
-                and not self.ai_remove_background
-            ):
-                transforms.append({"e-bgremove": True})
+            # if (
+            #     not self.ai_background_removal_external
+            #     and not self.ai_remove_background
+            # ):
+            #     transforms.append({"e-bgremove": True})
             if isinstance(self.ai_drop_shadow, AIDropShadow):
                 ai_drop_shadow_params = self.ai_drop_shadow.model_dump(
                     exclude_none=True
@@ -207,11 +207,11 @@ class AITransforms:
         Background & foreground
         ~~~~~~~~~~~~~~~~~~~~~~~
         ai_background_removal_external : bool
-            Removes the background using an Removedotbg (external AI service).
+            Removes the background using an Removedotbg , remove.bg and remove dot bg (external AI service).
 
         ai_remove_background : bool
             Removes the background using ImageKit’s native AI. Cheaper model.
-            Costs 0.1x of ai_background_removal_external.
+            Costs 0.1x of remove.bg.
 
         Image modification
         ~~~~~~~~~~~~~~~~~~

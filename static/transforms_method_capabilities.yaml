@@ -28,11 +28,13 @@ resize_and_crop:
 ai_transform:
   capability:
     # Background & foreground manipulation
-    - remove background using AI (external provider) Removedotbg, remove dot, bg remove.bg
+    - remove background using AI (external provider) Removedotbg, remove dot, bg remove.bg, remove dot bg
     - remove background using ImageKit native AI
+    - remove background with preserved foreground subject
     - change image background using text prompt
     - reposition foreground subject while changing background
-    - preserve subject while replacing background context
+    - preserve subject while replacing background context using prompt
+    - free form of changing background using natural language
 
     # Image editing & modification
     - edit image content using natural language prompt
@@ -201,6 +203,7 @@ effects_and_enhancement:
     - adjust color appearance using gradients
     - apply linear gradient overlays
     - apply gradient backgrounds behind layers
+    - apply gradient backgrounds using color gradients, can specify start and end colors
 
     # Shadow & depth
     - add drop shadow to transparent images

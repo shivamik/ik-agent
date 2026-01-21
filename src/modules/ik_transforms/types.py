@@ -12,7 +12,7 @@ Assumes you already have NumberOrExpression + EXPR_REGEX as in your snippet.
 from __future__ import annotations
 
 import re
-from typing import Any, Optional, Union, Literal, Dict
+from typing import Any, Optional, Union, Literal, Dict, List
 
 from pydantic_core import core_schema
 from pydantic import GetCoreSchemaHandler, BaseModel, model_validator, field_validator
@@ -622,6 +622,7 @@ class Color(str):
             raise TypeError("Color must be a string")
 
         value = v.strip()
+        value = value.lstrip("#")  # remove leading '#' if present
 
         # SVG color keyword
         if value.lower() in SVG_COLOR_KEYWORDS:
@@ -655,7 +656,7 @@ class Color(str):
 
 class BlurredBackground(BaseModel):
     blur_intensity: Union[int] = "auto"
-    brightness: Number
+    brightness: Number = 0
 
     @field_validator("brightness")
     def validate_brightness(cls, v):
@@ -695,7 +696,6 @@ class Background(BaseModel):
                 value = background_value
             elif isinstance(self.background, BlurredBackground):
                 value = f"blurred_{self.background.blur_intensity}_{self.background.brightness}"
-                value = value
             elif isinstance(self.background, GradientBackground):
                 value = (
                     f"gradient_{self.background.mode}_{self.background.pallete_size}"
@@ -746,3 +746,102 @@ class AspectRatio(BaseModel):
             "Aspect ratio must be '<w>_<h>' (e.g. '16_9') "
             "or an arithmetic expression like 'iar_div_2'"
         )
+
+
+# reuse your Number class exactly as-is
+# from .number import Number
+
+
+_RADIUS_SPLIT = re.compile(r"_")
+
+
+class Radius:
+    """
+    ImageKit radius parameter.
+
+    Supported values:
+    - Single:
+        - Number (int → serialized via Number rules)
+        - "max"
+    - Per-corner (TL_TR_BR_BL):
+        - "10_20_10_20"
+        - "max_50_max_50"
+        - "max_max_max_max"
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source_type: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> core_schema.CoreSchema:
+        # Accept raw inputs as str or int
+        union = core_schema.union_schema(
+            [
+                core_schema.int_schema(),
+                core_schema.str_schema(),
+            ]
+        )
+
+        validator = core_schema.no_info_plain_validator_function(cls.validate)
+
+        serializer = core_schema.plain_serializer_function_ser_schema(
+            cls.serialize,
+            return_schema=core_schema.str_schema(),
+        )
+
+        return core_schema.chain_schema(
+            [union, validator],
+            serialization=serializer,
+        )
+
+    @staticmethod
+    def validate(value: Union[int, str]) -> Union[int, str]:
+        # Single int → OK
+        if isinstance(value, int):
+            return value
+
+        if isinstance(value, str):
+            # single literal
+            if value == "max":
+                return value
+
+            # per-corner
+            parts = _RADIUS_SPLIT.split(value)
+            if len(parts) == 4:
+                for p in parts:
+                    if p == "max":
+                        continue
+                    # must be valid Number input
+                    try:
+                        Number.validate(int(p))
+                    except Exception:
+                        raise ValueError(f"Invalid radius corner value: {p}")
+                return value
+
+        raise ValueError(
+            "Invalid radius value. "
+            "Expected Number, 'max', or 4-part value like '10_20_10_20' or 'max_50_max_50'."
+        )
+
+    @staticmethod
+    def serialize(value: Union[int, str]) -> str:
+        # single number
+        if isinstance(value, int):
+            return Number.serialize(value)
+
+        # string
+        if "_" not in value:
+            return value
+
+        # per-corner → serialize each corner
+        parts: List[str] = value.split("_")
+        serialized: List[str] = []
+
+        for p in parts:
+            if p == "max":
+                serialized.append("max")
+            else:
+                serialized.append(Number.serialize(int(p)))
+
+        return "_".join(serialized)

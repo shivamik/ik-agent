@@ -159,9 +159,10 @@ class ImageOverlay(BaseModel):
                     "Solid color overlay requires width and height dimensions"
                 )
 
-            if self.background is None:
+            if (self.background is None) and (self.effects.gradient is None):
                 raise ValueError(
                     "Solid color overlay requires background (background color)"
+                    " or Gradient effect"
                 )
 
         if self.zoom is not None and self.focus != "face":
@@ -350,6 +351,7 @@ class ImageOverlayTransforms:
         aspect_ratio: Optional[Union[AspectRatioValue, AspectRatio]] = None,
         crop: Optional[Literal["force", "at_max", "at_least"]] = None,
         crop_mode: Optional[Literal["extract", "pad_resize"]] = None,
+        background: Optional[Union[BackgroundValue, Background]] = None,
         focus: Optional[
             Literal[
                 "face",
@@ -578,6 +580,7 @@ class ImageOverlayTransforms:
 
             If `enabled` is False, returns `{}`.
         """
+
         if child is not None:
             child = ImageOverlay(**child)
 
@@ -588,6 +591,7 @@ class ImageOverlayTransforms:
             height=height,
             aspect_ratio=aspect_ratio,
             crop=crop,
+            background=background,
             crop_mode=crop_mode,
             focus=focus,
             zoom=zoom,
